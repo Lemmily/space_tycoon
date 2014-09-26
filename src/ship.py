@@ -1,19 +1,24 @@
-from pyglet.sprite import Sprite
-from src import resources
-from src import constants
+
+from src import R
+from src.render import Sprite
+
 __author__ = 'Emily'
 
 
-class Ship():
-    def __init__(self, x=10, y=10, batch=None):
+class Ship(Sprite):
+    def __init__(self, x=10, y=10, group=None):
+        Sprite.__init__(self, (x,y), R.TILE_CACHE["data/ship_1.png",31,45])
+
         self.x = x
         self.y = y
-        self.sprite = Sprite(resources.ship_img, batch=batch)
+        # if group != None:
+        #     group.add(self.sprite)
         self.destination = (250, 250)
         self.speed = 20
         self.path = []
 
-    def update(self, dt):
+    def update(self, camera, dt= 1):
+        Sprite.update(self, camera, dt)
         if self.destination[0] != self.x and self.destination[1] != self.y:
             if self.x > self.destination[0]:
                 dx = -self.speed * dt
@@ -42,8 +47,8 @@ class Ship():
         return (self.x, self.y)
 
     def set_location(self, x, y):
-        self.sprite.x  = x
-        self.sprite.y  = y
+        self.x_y  = (x, y)
         self.x = x
         self.y = y
+
         # self.sprite.position = (x / constants.tile_width, y / constants.tile_height)

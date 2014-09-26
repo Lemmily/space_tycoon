@@ -1,4 +1,6 @@
-from pygame.sprite import Sprite
+import math
+from src import R
+from src.render import Sprite
 
 __author__ = 'Emily'
 
@@ -14,8 +16,8 @@ class City():
         self.connections = {}
 
 
-class WorldMap():
-    def __init__(self, width, height, tile_width=24, tile_height=24, batch=None):
+class WorldMap:
+    def __init__(self, width, height, tile_width=24, tile_height=None, group=None):
         """
 
         Sectors?
@@ -26,21 +28,24 @@ class WorldMap():
         :param batch:
         :return:
         """
-        self.width = width
-        self.height = height
+        self.width = width #* tile_width #stored as pixels
+        self.height = height #* (tile_height or tile_width)
         self.tile_width = tile_width
-        self.tile_height = tile_height
-        self.tiles = [[None for j in range(height)] for i in range(width)]
+        self.tile_height = tile_height or tile_width
+        self.tiles = [[None for j in range(height/tile_width)] for i in range(width/tile_width)]
         self.cities = []
         self.cities_dict = {}
         self.connections = {}
         self.sprite = None
 
-        for i in range(10):
+        for i in range(20):
             city = City("city" + str(i))
-            self.place_city(city)
-            city.sprite = Sprite #(resources.city_img,x=city.x * tile_width + tile_width/2, y=city.y * tile_height + tile_height/2, batch=batch)
-            city.sprite.scale = 2
+            if self.place_city(city):
+                city.sprite = Sprite((city.x * self.tile_width, city.y * self.tile_height), R.TILE_CACHE["data/two.png"], sprite_pos=[0,0])
+                                 #(resources.city_img,x=city.x * tile_width + tile_width/2, y=city.y * tile_height + tile_height/2, batch=batch)
+                if group != None:
+                    group.add(city.sprite)
+                # city.sprite.scale = 2
 
         self.create_connections()
 
@@ -52,7 +57,7 @@ class WorldMap():
         """
         placed = False
 
-        distance = 8
+        distance = 5
         tries = 0
         while placed == False and distance > 3:
             tries += 1
@@ -69,6 +74,7 @@ class WorldMap():
             self.cities.append(city)
             self.cities_dict[city.name] = city
             self.tiles[city.x][city.y] = city
+            return True
 
         else:
             return False
@@ -77,7 +83,9 @@ class WorldMap():
         if city.x == -1:
             return False
         for other_city in self.cities:
-            if max(city.x, other_city.x) - min(city.x, other_city.x) < distance or max(city.y, other_city.y) - min(city.y, other_city.y) < distance:
+            dx = abs(city.x - other_city.x)
+            dy = abs(city.y - other_city.y)
+            if math.sqrt(dx * dx + dy * dy) < distance:
                 return False
 
         return True # good position in terms of distances.
@@ -95,6 +103,12 @@ class WorldMap():
                     self.connections[city.name + other_city.name] = (city.x, city.y, other_city.x, other_city.y)
                     connected = True
 
-    def check_mouse_pos(self, mouse_pos):
-        tile_pos = (mouse_pos[0]/self.tile_width, mouse_pos[1]/self.tile_height)
-        return self.tiles[tile_pos[0]][tile_pos[1]]
+    def check_mouse_pos(self, mouse_pos, cam_pos=(0,0)):
+        for city in self.cities:
+            if city.sprite.rect.collidepoint(mouse_pos):
+                return city
+        # tile_pos = ((mouse_pos[0] + 1 + cam_pos[0])/self.tile_width, (mouse_pos[1] + 1 + cam_pos[1])/self.tile_height)
+        # if 0 > tile_pos[0] > len(self.tiles) - 1 or  0 > tile_pos[1] > len(self.tiles[0]) - 1:
+        #     return None
+        return None
+        # return self.tiles[tile_pos[0]][tile_pos[1]]

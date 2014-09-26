@@ -1,3 +1,5 @@
+from pygame.rect import Rect
+from pygame.sprite import RenderUpdates
 from src import R
 
 __author__ = 'Emily'
@@ -5,6 +7,23 @@ __author__ = 'Emily'
 
 import pygame as pg
 
+
+class Camera:
+    def __init__(self, camera_func, width, height):
+        self.camera_func = camera_func
+        self.state = Rect(0, 0, width, height)
+
+    def apply(self, target):
+        return target.rect.move(self.state.topleft)
+
+    def update(self, target):
+        self.state = self.camera_func(self.state, target.rect)
+
+
+def simple_camera(camera, target_rect):
+    l, t, _, _ = target_rect # l = left,  t = top
+    _, _, w, h = camera      # w = width, h = height
+    return Rect(-l+R.HALF_WIDTH, -t+R.HALF_HEIGHT, w, h)
 
 class TileCache:
 
@@ -14,14 +33,22 @@ class TileCache:
         self.cache = {}
 
 
-    def __getitem__(self, filename):
+    def __getitem__(self, filename, tile_width=None, tile_height=None):
         """Return a table of files, load it from disk if needed"""
 
-        key = (filename, self.width, self.height)
+        if not isinstance(filename, basestring):
+            width = filename[1] or self.width
+            height = filename[2] or self.height
+            filename = filename[0]
+        else:
+            height = self.height
+            width = self.width
+
+        key = (filename, width, height)
         try:
             return self.cache[key]
         except KeyError:
-            tile_table = self._load_tile_table(filename, self.width, self.height)
+            tile_table = self._load_tile_table(filename, width, height)
 
             self.cache[key] = tile_table
             return tile_table
@@ -41,26 +68,66 @@ class TileCache:
                 line.append(image.subsurface(rect))
         return tile_table
 
+class SortedUpdates(RenderUpdates):
+    """A sprite group that sorts them by depth."""
+
+    def sprites(self):
+        """The list of sprites in the group, sorted by depth."""
+
+        return sorted(self.spritedict.keys(), key=lambda sprite: sprite.depth)
+
+
+class SortedUpdatesCamera(RenderUpdates):
+    """A sprite group that sorts them by depth."""
+
+    def __init__(self, camera):
+        super(RenderUpdates, self).__init__(self)
+        self.camera = camera
+
+    def sprites(self):
+        """The list of sprites in the group, sorted by depth."""
+        return sorted(self.spritedict.keys(), key=lambda sprite: sprite.depth)
+
+
+
+
 class Sprite(pg.sprite.Sprite):
-    def __init__(self, pos=(0,0),frames=None, sprite_pos=[0, 0], t_size=R.MAP_TILE_WIDTH):
-        super(Sprite, self).__init__()
-        self.frames = frames
-        if (self.frames != None):
-            self.image = frames[sprite_pos[0]][sprite_pos[1]]
+
+    def __init__(self, pos=(0, 0), frames=None, sprite_pos=None, scaling=1):
+        pg.sprite.Sprite.__init__(self)
+        if frames:
+            self.frames = frames
         else:
-            self.image = pg.Surface([t_size, t_size])
-            self.image.fill((100, 20, 20))
+            self.frames = [[pg.Surface([R.TILE_SIZE, R.TILE_SIZE])]]
+
+        if sprite_pos != None:
+            self.image = self.frames[sprite_pos[0]][sprite_pos[1]]
+            self.animation = None
+        else:
+            self.image = self.frames[0][0]
+            self.animation = self.stand_animation()
+
         self.rect = self.image.get_rect()
-        self.animation = None  # self.stand_animation()
-        self.tile_size = t_size
+        center = self.rect.center
+        if scaling != None:
+            self.image = pg.transform.scale(self.image, (R.TILE_SIZE * scaling, R.TILE_SIZE * scaling))
+        self.rect.center = center
+
         self.pos = pos
+        self.x_y = pos[0],pos[1]
+
+    def _get_pos(self):
+        """Check the current position of the sprite on the map."""
+        # return self.rect.center[0]/R.TILE_SIZE, self.rect.topleft[1]/R.TILE_SIZE
+        return self.rect.center[0], self.rect.center[1]
+
+    def _set_pos(self, pos):
+        """Set the position and depth of the sprite on the map."""
+
+        self.rect.center = pos[0], pos[1]
         self.depth = 0
 
-
-    def update(self, *args):
-        # if self.animation is not None:
-        #             self.animation.next()
-        pass
+    pos = property(_get_pos, _set_pos)
 
     def move(self, dx, dy):
         """Change the position of the sprite on screen."""
@@ -68,29 +135,37 @@ class Sprite(pg.sprite.Sprite):
         self.rect.move_ip(dx, dy)
         self.depth = self.rect.midbottom[1]
 
+    def stand_animation(self):
+        """The default animation."""
+        while True:
+            # Change to next frame every two ticks
+            for frame in self.frames:
+                self.image = frame[0]
+                yield None
+                yield None
 
-    def _get_tile_pos(self):
-        """returns as TILE position, """
-        return ( self.rect.x / (self.tile_size), self.rect.y / self.tile_size)
+    def update(self, *args):
+        """Run the current animation."""
+        for arg in args:
+            if isinstance(arg, Camera):
+                cam_pos = arg.state.topleft
+                self.rect.center = self.x_y[0] + cam_pos[0], self.x_y[1] + cam_pos[1]
 
-    def _set_tile_pos(self, pos):
-        """Stores the position of the PIXEL POSITION X,Y with INCLUDED padding AND offset FROM the given TILE position. """
-        self.rect.topleft = (pos[0] * (self.tile_size),  # x
-                             pos[1] * (self.tile_size))  # y
+        if self.animation != None:
+            self.animation.next()
 
-    tile_pos = property(_get_tile_pos, _set_tile_pos)
 
-    def _get_pix_pos(self):
-        """check current pos of sprite on map, returns as PIXEL position"""
-        # return (self.offset + self.rect.x/(R.MAP_TILE_WIDTH+self.padding), self.offset + self.rect.y/(R.MAP_TILE_WIDTH + self.padding))
-        #return ( (self.rect.x - self.offsetX )/(R.MAP_TILE_WIDTH+self.padding), (self.rect.y - self.offsetY)/(R.MAP_TILE_WIDTH + self.padding))
-        return (self.rect.x, self.rect.y )
+class ParallaxSprite(Sprite):
+    def __init__(self, pos=(0, 0), frames=None, sprite_pos=None, offset=0.1, scaling=None):
+        Sprite.__init__(self, pos, frames, sprite_pos,scaling)
+        self.offset = offset
 
-    def _set_pix_pos(self, pos):
-        """Set the position by the PIXEL POSITION X,Y with INCLUDED padding AND offset FROM the given PIXEL position. """
-        self.rect.topleft = (pos[0] * (self.tile_size),  # x
-                             pos[1] * (self.tile_size))  # y
+    def update(self, *args):
+        for arg in args:
+            if isinstance(arg, Camera):
+                cam_pos = arg.state.topleft
+                self.rect.center = self.x_y[0] + cam_pos[0] * self.offset, self.x_y[1] + cam_pos[1] * self.offset
 
-        self.depth = 0  # self.rect.midbottom[1] # not used
+        if self.animation != None:
+            self.animation.next()
 
-    pos = property(_get_pix_pos, _set_pix_pos)
