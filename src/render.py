@@ -1,3 +1,4 @@
+import copy
 from pygame.rect import Rect
 from pygame.sprite import RenderUpdates
 from src import R
@@ -74,7 +75,8 @@ class SortedUpdates(RenderUpdates):
     def sprites(self):
         """The list of sprites in the group, sorted by depth."""
 
-        return sorted(self.spritedict.keys(), key=lambda sprite: sprite.depth)
+        returnable = sorted(self.spritedict.keys(), key=lambda sprite: sprite.depth)
+        return returnable
 
 
 class SortedUpdatesCamera(RenderUpdates):
@@ -93,28 +95,51 @@ class SortedUpdatesCamera(RenderUpdates):
 
 class Sprite(pg.sprite.Sprite):
 
-    def __init__(self, pos=(0, 0), frames=None, sprite_pos=None, scaling=1):
+    def __init__(self, pos=(0, 0), frames=None, sprite_pos=None, scaling=2, tile_size=R.TILE_SIZE, ticks=2, depth=1):
         pg.sprite.Sprite.__init__(self)
+
+
+
         if frames:
-            self.frames = frames
+            self.frames = copy.deepcopy(frames)
+            self.orig_frames = copy.deepcopy(frames)
+            # for i in range(len(frames)):
+            #     # self.frames.append()
+            #     for frame in frames[i]:
+            #         self.frames[i].append(frame.copy())
+            #         # self.frames[i].append(frames[i][j].copy())
         else:
             self.frames = [[pg.Surface([R.TILE_SIZE, R.TILE_SIZE])]]
+
+        if scaling != None:
+            for i in range(len(frames)):
+                for j in range(len(frames[i])):
+                    image = frames[i][j].copy()
+                    t_image = pg.transform.scale(image, (image.get_width() * scaling, image.get_height() * scaling))
+                    self.frames[i][j] = t_image
+                    self.orig_frames[i][j] = image
+        else:
+            self.frames = frames
+
 
         if sprite_pos != None:
             self.image = self.frames[sprite_pos[0]][sprite_pos[1]]
             self.animation = None
         else:
             self.image = self.frames[0][0]
+            self.ticks = ticks
             self.animation = self.stand_animation()
 
+        # self.rect = self.image.get_rect()
+        # center = self.rect.center
+        # if scaling != None:
+        #     self.image = pg.transform.scale(self.image, (R.TILE_SIZE * scaling, R.TILE_SIZE * scaling))
         self.rect = self.image.get_rect()
-        center = self.rect.center
-        if scaling != None:
-            self.image = pg.transform.scale(self.image, (R.TILE_SIZE * scaling, R.TILE_SIZE * scaling))
-        self.rect.center = center
+        # self.rect.center = self.pos
 
         self.pos = pos
         self.x_y = pos[0],pos[1]
+        self.depth = depth
 
     def _get_pos(self):
         """Check the current position of the sprite on the map."""
@@ -125,9 +150,20 @@ class Sprite(pg.sprite.Sprite):
         """Set the position and depth of the sprite on the map."""
 
         self.rect.center = pos[0], pos[1]
-        self.depth = 0
+        # self.depth = 0
 
     pos = property(_get_pos, _set_pos)
+
+
+    def scale_to(self, w, h):
+        center = self.rect.center
+        for i in range(len(self.orig_frames)):
+            for j in range(len(self.orig_frames[i])):
+                image = self.orig_frames[i][j].copy()
+                self.frames[i][j] = pg.transform.scale(image, (w, h))
+        self.image = self.frames[0][0]
+        self.rect = self.image.get_rect()
+        self.rect.center = center
 
     def move(self, dx, dy):
         """Change the position of the sprite on screen."""
@@ -141,8 +177,9 @@ class Sprite(pg.sprite.Sprite):
             # Change to next frame every two ticks
             for frame in self.frames:
                 self.image = frame[0]
-                yield None
-                yield None
+
+                for i in range(self.ticks):
+                    yield None
 
     def update(self, *args):
         """Run the current animation."""
@@ -157,7 +194,7 @@ class Sprite(pg.sprite.Sprite):
 
 class ParallaxSprite(Sprite):
     def __init__(self, pos=(0, 0), frames=None, sprite_pos=None, offset=0.1, scaling=None):
-        Sprite.__init__(self, pos, frames, sprite_pos,scaling)
+        Sprite.__init__(self, pos, frames, sprite_pos, scaling)
         self.offset = offset
 
     def update(self, *args):

@@ -7,6 +7,8 @@ from src.map import WorldMap
 from src.render import Sprite, SortedUpdates, SortedUpdatesCamera, ParallaxSprite, TileCache, Camera, simple_camera
 from src.ship import Ship
 
+import pygame.gfxdraw as gfxdraw
+
 __author__ = 'Emily'
 
 import pygame as pg
@@ -32,19 +34,19 @@ class Game():
 
         # self.ui_overlay.add(self.selected)
 
-        thing = Sprite((100, 100), R.TILE_CACHE["data/planet_1.png"], scaling=3)
+        thing3 = Sprite((200, 200), R.TILE_CACHE["data/planet_1.png"], scaling=3, ticks=8, depth=2)
+        # thing = Sprite((100, 100), R.TILE_CACHE["data/planet_1.png"], scaling=3, ticks=4)
         thing2 = ParallaxSprite((100, 100), R.TILE_CACHE["data/two.png"], sprite_pos=[1,0])
-        self.sprites.add(thing, thing2)  # , self.world)
+        self.sprites.add( thing2, thing3)  # , self.world)
         thing2 = ParallaxSprite((500, 500), R.TILE_CACHE["data/two.png"], sprite_pos=[1,0], offset=0.1)
         self.sprites.add(thing2)
         thing2 = ParallaxSprite((800, 200), R.TILE_CACHE["data/two.png"], sprite_pos=[1,0])
-        self.sprites.add(thing2)
-        thing2 = Sprite((50, 500), R.TILE_CACHE["data/two.png"], sprite_pos=[0,0], scaling=2)
         self.sprites.add(thing2)
 
 
         self.ship = Ship(group=self.sprites)
         self.sprites.add(self.ship)
+        # self.ship.se
         # control
         self.pressed_key = None
         self.mouse_pressed = False
@@ -60,6 +62,13 @@ class Game():
         while not self.game_over:
             dt = 1/float(clock.tick(30))
 
+
+            ###temp
+            self.screen.blit(self.background, (0,0))
+            ####
+
+
+
             self.controls()
 
             self.sprites.clear(self.screen, self.background)
@@ -67,6 +76,11 @@ class Game():
 
             self.ui_overlay.clear(self.screen, self.background)
             self.ui_overlay.update()
+
+            for connection in self.world.connections.values():
+                points = self.world.get_connections(connection, self.camera)
+
+                gfxdraw.bezier(self.screen, points, 10, (255,0,0))
 
             dirties = self.sprites.draw(self.screen)
             dirties.append(self.ui_overlay.draw(self.screen))
@@ -77,13 +91,13 @@ class Game():
             #     points = calculate_bezier(control_points[x:x+4])
             #     pg.draw.aalines(self.screen, (0, 0, 255), False, points )    #[(40, 100), (150, 566), (400, 100), (500, 300)]))
 
-            if self.picked != None and self.selected == None:
-                self.selected = Sprite(self.picked.sprite.rect.center, R.TILE_CACHE["data/selection_anim.png"])
-                self.sprites.add(self.selected)
-            elif self.picked == None and self.selected != None:
-                self.selected.kill()
-                self.selected = None
 
+            for sprite in self.sprites:
+                points = (sprite.rect.topleft, sprite.rect.topright, sprite.rect.bottomright, sprite.rect.bottomleft)
+                pg.draw.aalines(self.screen, (0, 0, 255), True, points)
+
+
+            self.update_ui()
 
             pg.display.update()
             # pg.display.flip()
@@ -106,22 +120,44 @@ class Game():
 
 
     def update_ui(self):
-        if self.picked != None:
-            self.selected.rect.topleft = self.picked.rect.topleft
+        if self.picked != None and self.selected == None:
+
+            if hasattr(self.picked, "sprite"):
+                sprite = self.picked.sprite
+            else:
+                sprite = self.picked
 
 
-    def mouse_clicked(self, x, y, button):
+            self.selected = Sprite(sprite.rect.center, R.TILE_CACHE["data/selection_anim.png"], depth=10)
+
+            size = max(sprite.rect.w, sprite.rect.w)
+
+            self.selected.scale_to(size,size)
+            self.selected.x_y = (sprite.x_y[0], sprite.x_y[1])
+            self.sprites.add(self.selected)
+        elif self.picked == None and self.selected != None:
+            self.selected.kill()
+            self.selected = None
+
+
+
+
+    def mouse_clicked(self, (x, y), button):
         #check if inside map first?
+        # if button == 1:
         if 0 < x < 750 and 0 < y < 500:
-            self.picked = self.world.check_mouse_pos((x,y), self.camera.state.topleft)
-            if self.picked != None:
-                print "picked city: " + self.picked.name + "  ", self.picked.sprite.x_y
-                if self.selected != None:
-                    self.selected.rect.center = self.picked.sprite.rect.center
-                    self.selected.x_y = (self.picked.sprite.x_y[0], self.picked.sprite.x_y[1])
-                        # .center = (self.picked.sprite.x_y[0] + self.camera.state.topleft[0], self.picked.sprite.x_y[1] + self.camera.state.topleft[1])
-            # else:
-            #     self.selected.rect.topleft = (-10,-
+            if button == 1:
+                self.picked = self.world.check_mouse_pos((x,y), self.camera.state.topleft)
+                if self.picked != None:
+                    print "picked city: " + self.picked.name + "  ", self.picked.sprite.x_y
+                    if self.selected != None:
+                        # self.selected.rect.center = self.picked.sprite.rect.center
+                        self.selected.x_y = (self.picked.sprite.x_y[0], self.picked.sprite.x_y[1])
+                            # .center = (self.picked.sprite.x_y[0] + self.camera.state.topleft[0], self.picked.sprite.x_y[1] + self.camera.state.topleft[1])
+                else:
+                    for sprite in self.sprites.sprites():
+                        if sprite.rect.collidepoint((x,y)):
+                            self.picked = sprite
         else:
             #do menu things here.
             pass
@@ -148,14 +184,17 @@ class Game():
                 #         self.actual_zoom = self.zoom_limit[0]
 
                 # if event.button == 1:  # left button
-                if event.button == 2:  # right button
+                if event.button == 2:  # middle button
                     self.drag = True
 
 
             elif event.type == MOUSEBUTTONUP:
-                if event.button == 1:
-                if event.button == 2:
+                if event.button == 1: #left
+                    self.mouse_clicked(event.pos, event.button)
+                if event.button == 2: #middle
                     self.drag = False
+                if event.button == 3: #right
+                    self.mouse_clicked(event.pos, event.button)
 
             elif event.type == MOUSEMOTION and self.drag:  # drag the map
                 if event.rel <> (0, 0):

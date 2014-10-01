@@ -33,82 +33,92 @@ class WorldMap:
         self.tile_width = tile_width
         self.tile_height = tile_height or tile_width
         self.tiles = [[None for j in range(height/tile_width)] for i in range(width/tile_width)]
-        self.cities = []
+        self.planets = []
         self.cities_dict = {}
         self.connections = {}
         self.sprite = None
 
         for i in range(20):
-            city = City("city" + str(i))
-            if self.place_city(city):
-                city.sprite = Sprite((city.x * self.tile_width, city.y * self.tile_height), R.TILE_CACHE["data/two.png"], sprite_pos=[0,0])
-                                 #(resources.city_img,x=city.x * tile_width + tile_width/2, y=city.y * tile_height + tile_height/2, batch=batch)
+            planet = City("city" + str(i))
+            if self.place_planet(planet):
+                planet.sprite = Sprite((planet.x, planet.y), R.TILE_CACHE["data/two.png"], sprite_pos=[0,0])
                 if group != None:
-                    group.add(city.sprite)
+                    group.add(planet.sprite)
                 # city.sprite.scale = 2
 
         self.create_connections()
 
-    def place_city(self, city):
+    def place_planet(self, planet):
         """
         Tries to place the city on the map,
-        :param city:
+        :param planet:
         :return:
         """
         placed = False
 
-        distance = 5
+        distance = 5 * self.tile_width
         tries = 0
-        while placed == False and distance > 3:
+        while not placed and distance > 3 * self.tile_width:
             tries += 1
-            x = rand.randint(1, len(self.tiles) - 2)
-            y = rand.randint(1, len(self.tiles[x]) - 2)
-            city.x,city.y = x,y
+            x = rand.randint(self.tile_width, len(self.tiles * self.tile_width) - self.tile_width - 1)
+            y = rand.randint(self.tile_width, len(self.tiles[x/self.tile_width] * self.tile_width) - self.tile_width - 1)
+            # y = rand.randint(1, len(self.tiles[x]) - 2)
+            planet.x,planet.y = x,y
 
-            placed = self.check_city_distances(city, distance)
+            placed = self.check_planet_distances(planet, distance)
             if tries >= 5:
                 distance -= 1
                 tries = 0
 
         if placed:
-            self.cities.append(city)
-            self.cities_dict[city.name] = city
-            self.tiles[city.x][city.y] = city
+            self.planets.append(planet)
+            self.cities_dict[planet.name] = planet
+            self.tiles[planet.x/self.tile_width][planet.y/self.tile_width] = planet
             return True
 
         else:
             return False
 
-    def check_city_distances(self, city, distance=8):
-        if city.x == -1:
+    def check_planet_distances(self, planet, distance=8):
+        if planet.x == -1:
             return False
-        for other_city in self.cities:
-            dx = abs(city.x - other_city.x)
-            dy = abs(city.y - other_city.y)
+        for other_city in self.planets:
+            dx = abs(planet.x - other_city.x)
+            dy = abs(planet.y - other_city.y)
             if math.sqrt(dx * dx + dy * dy) < distance:
                 return False
 
         return True # good position in terms of distances.
 
     def create_connections(self):
-        for city in self.cities:
+        for planet in self.planets:
             connected = False
             while not connected:
                 num = rand.randint(0,9) #inclusive of upper limit.
                 # connection = "city" + str(num)
-                other_city = rand.choice(self.cities)
+                other_city = rand.choice(self.planets)
                 # other_city = self.cities_dict[connection]
-                if other_city.name != city.name and not ( self.connections.has_key(city.name + other_city.name) or self.connections.has_key(other_city.name + city.name)):
-                    city.connections[other_city.name] = (city.x, city.y, other_city.x, other_city.y)
-                    self.connections[city.name + other_city.name] = (city.x, city.y, other_city.x, other_city.y)
+                if other_city.name != planet.name and not ( self.connections.has_key(planet.name + other_city.name) or self.connections.has_key(other_city.name + planet.name)):
+                    planet.connections[other_city.name] = ((planet.x, planet.y), (other_city.x, other_city.y))
+                    midpoint = (max(planet.x, other_city.x) - abs(planet.x - other_city.x)/3, max(planet.y, other_city.y) - abs(planet.y - other_city.y)/3)
+                    self.connections[planet.name + other_city.name] = ((planet.x, planet.y), midpoint, (other_city.x, other_city.y))
                     connected = True
 
     def check_mouse_pos(self, mouse_pos, cam_pos=(0,0)):
-        for city in self.cities:
-            if city.sprite.rect.collidepoint(mouse_pos):
-                return city
+        for object in self.planets:
+            if object.sprite.rect.collidepoint(mouse_pos):
+                return object
         # tile_pos = ((mouse_pos[0] + 1 + cam_pos[0])/self.tile_width, (mouse_pos[1] + 1 + cam_pos[1])/self.tile_height)
         # if 0 > tile_pos[0] > len(self.tiles) - 1 or  0 > tile_pos[1] > len(self.tiles[0]) - 1:
         #     return None
         return None
         # return self.tiles[tile_pos[0]][tile_pos[1]]
+
+    def get_connections(self, connection, camera):
+        offset = camera.state.topleft
+        new_connections = []
+        for pair in connection:
+            new_connections.append((pair[0] + offset[0], pair[1] + offset[1]))
+
+        return new_connections
+
