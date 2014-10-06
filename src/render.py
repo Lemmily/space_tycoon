@@ -21,7 +21,9 @@ class Camera:
         self.state = self.camera_func(self.state, target.rect)
 
 
+
 def simple_camera(camera, target_rect):
+    ##borrowed function - cannot remember where - stack overflow answer i think???
     l, t, _, _ = target_rect # l = left,  t = top
     _, _, w, h = camera      # w = width, h = height
     return Rect(-l+R.HALF_WIDTH, -t+R.HALF_HEIGHT, w, h)
@@ -95,10 +97,8 @@ class SortedUpdatesCamera(RenderUpdates):
 
 class Sprite(pg.sprite.Sprite):
 
-    def __init__(self, pos=(0, 0), frames=None, sprite_pos=None, scaling=2, tile_size=R.TILE_SIZE, ticks=2, depth=1):
+    def __init__(self, pos=(0, 0), frames=None, sprite_pos=None, scaling=2, tile_size=R.TILE_SIZE, ticks=2, depth=1, row=0):
         pg.sprite.Sprite.__init__(self)
-
-
 
         if frames:
             self.frames = copy.deepcopy(frames)
@@ -140,6 +140,7 @@ class Sprite(pg.sprite.Sprite):
         self.pos = pos
         self.x_y = pos[0],pos[1]
         self.depth = depth
+        self.row = row
 
     def _get_pos(self):
         """Check the current position of the sprite on the map."""
@@ -176,7 +177,7 @@ class Sprite(pg.sprite.Sprite):
         while True:
             # Change to next frame every two ticks
             for frame in self.frames:
-                self.image = frame[0]
+                self.image = frame[self.row] # this zero could be the direction.
 
                 for i in range(self.ticks):
                     yield None
@@ -206,3 +207,23 @@ class ParallaxSprite(Sprite):
         if self.animation != None:
             self.animation.next()
 
+
+class Block(pg.sprite.Sprite):
+    """ Solid colour rectangle
+        to set its position do blockInstance.pos = (0,0)
+    """
+    # Constructor. Pass in the color of the block,
+    # and its width and height position
+    def __init__(self, width, height, colour):
+        # Call the parent class (Sprite) constructor
+        pg.sprite.Sprite.__init__(self)
+
+
+        # Create an image of the block, and fill it with a colour.
+        # This could also be an image loaded from the disk.
+        self.image = pg.Surface([width, height])
+        self.image.fill(colour)
+
+        # Fetch the rectangle object that has the dimensions of the image
+        # Update the position of this object by setting the values of rect.x and rect.y
+        self.rect = self.image.get_rect()

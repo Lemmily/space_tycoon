@@ -3,7 +3,7 @@ from pygame.constants import MOUSEMOTION, MOUSEBUTTONDOWN, MOUSEBUTTONUP
 from pygame.rect import Rect
 from pygame.sprite import RenderUpdates
 from src import R
-from src.map import WorldMap
+from src.map import SolarSystem, Galaxy
 from src.render import Sprite, SortedUpdates, SortedUpdatesCamera, ParallaxSprite, TileCache, Camera, simple_camera
 from src.ship import Ship
 
@@ -20,24 +20,43 @@ class Game():
     def __init__(self):
         self.screen = pg.display.get_surface()
         self.game_over = False
-        self.background = pg.Surface((1024, 768))
-        self.background.fill((33, 100, 117))
+        self.background = pg.Surface((1440, 768))
+        self.background.fill((0, 60, 77))
+
+        self.ui_background_right = pg.Surface((R.UI_LEFTBAR, R.WINDOW_HEIGHT))
+        self.ui_background_right.fill((0, 0, 0))
+
+        self.ui_background_bottom =  pg.Surface((R.WINDOW_WIDTH, R.UI_BOTTOMBAR))
+        self.ui_background_bottom.fill((0, 0, 0))
+
+        self.ui_background = pg.Surface((R.WINDOW_WIDTH, R.WINDOW_HEIGHT))
+        self.ui_background.fill((100,200,100))
+        self.ui_background.set_colorkey((100,200,100))
+
+        self.ui_background.blit(self.ui_background_bottom, (0,R.UI_DOWN))
+        self.ui_background.blit(self.ui_background_right, (R.UI_LEFT,0))
 
         self.camera = Camera(simple_camera, 768, 512)
         self.sprites = SortedUpdates()
         self.ui_overlay = RenderUpdates()
 
 
-        self.world = WorldMap(1024,768,R.tile_size, group=self.sprites)
-        self.picked = None
-        self.selected = None #Sprite((-10, -10), R.TILE_CACHE["data/selection_anim.png"])
 
-        # self.ui_overlay.add(self.selected)
 
-        thing3 = Sprite((200, 200), R.TILE_CACHE["data/planet_1.png"], scaling=3, ticks=8, depth=2)
+        self.galaxy = Galaxy()#1024,768,R.tile_size, group=self.sprites)
+        print "finished generating"
+        self.layer = self.galaxy.sectors[0][0].points_of_interest[0]
+        self.zoom = "galaxy" # galaxy, solar system, planet # # possibly sector too
+        self.selected = None
+        self.selector = None #Sprite((-10, -10), R.TILE_CACHE["data/selection_anim.png"])
+
+
+        ##test sprites.
+        thing3 = Sprite((200, 200), R.TILE_CACHE["data/planet_1.png"], scaling=2, ticks=8, depth=2)
+        thing4 = Sprite((500, 350), R.TILE_CACHE["data/planet_1.png"], scaling=2, ticks=8, depth=2, row=1)
         # thing = Sprite((100, 100), R.TILE_CACHE["data/planet_1.png"], scaling=3, ticks=4)
         thing2 = ParallaxSprite((100, 100), R.TILE_CACHE["data/two.png"], sprite_pos=[1,0])
-        self.sprites.add( thing2, thing3)  # , self.world)
+        self.sprites.add( thing2, thing3, thing4)  # , self.world)
         thing2 = ParallaxSprite((500, 500), R.TILE_CACHE["data/two.png"], sprite_pos=[1,0], offset=0.1)
         self.sprites.add(thing2)
         thing2 = ParallaxSprite((800, 200), R.TILE_CACHE["data/two.png"], sprite_pos=[1,0])
@@ -45,13 +64,35 @@ class Game():
 
 
         self.ship = Ship(group=self.sprites)
+
         self.sprites.add(self.ship)
-        # self.ship.se
+
+
         # control
         self.pressed_key = None
         self.mouse_pressed = False
         self.cam_pos = Rect(0,0,self.screen.get_rect().width, self.screen.get_rect().height)
         self.drag = False
+
+    def render(self, dt):
+        dirties = []
+        if self.zoom == "galaxy":
+            #render using galaxy
+            sprites = self.galaxy.active_sector.sprites
+            sprites.clear(self.screen, self.background)
+            sprites.update(self.camera, dt)
+            dirties.append(sprites.draw(self.screen))
+        elif self.zoom == "solar":
+            self.layer.sprites.clear(self.screen, self.background)
+            self.layer.sprites.update(self.camera, dt)
+            dirties.append(self.layer.sprites.draw(self.screen))
+        else:
+            self.sprites.clear(self.screen, self.background)
+            self.sprites.update(self.camera, dt)
+
+        self.sprites.update(self.camera, dt)
+        self.ui_overlay.update(self.camera,dt)
+        return dirties
 
 
     def main(self):
@@ -71,18 +112,20 @@ class Game():
 
             self.controls()
 
-            self.sprites.clear(self.screen, self.background)
-            self.sprites.update(self.camera, dt)
+            dirties = self.render(dt)
 
-            self.ui_overlay.clear(self.screen, self.background)
-            self.ui_overlay.update()
+            # self.sprites.clear(self.screen, self.background)
+            # self.sprites.update(self.camera, dt)
 
-            for connection in self.world.connections.values():
-                points = self.world.get_connections(connection, self.camera)
+            # self.ui_overlay.clear(self.screen, self.background)
+            # self.ui_overlay.update()
+
+            for connection in self.galaxy.connections.values():
+                points = self.galaxy.get_connections(connection, self.camera)
 
                 gfxdraw.bezier(self.screen, points, 10, (255,0,0))
 
-            dirties = self.sprites.draw(self.screen)
+            # dirties = self.sprites.draw(self.screen)
             dirties.append(self.ui_overlay.draw(self.screen))
 
             # pg.draw.lines(self.screen, (0, 0, 255), False, [(100, 100), (150, 200), (200, 100)], 4)
@@ -92,9 +135,9 @@ class Game():
             #     pg.draw.aalines(self.screen, (0, 0, 255), False, points )    #[(40, 100), (150, 566), (400, 100), (500, 300)]))
 
 
-            for sprite in self.sprites:
-                points = (sprite.rect.topleft, sprite.rect.topright, sprite.rect.bottomright, sprite.rect.bottomleft)
-                pg.draw.aalines(self.screen, (0, 0, 255), True, points)
+            # for sprite in self.sprites:
+            #     points = (sprite.rect.topleft, sprite.rect.topright, sprite.rect.bottomright, sprite.rect.bottomleft)
+            #     pg.draw.aalines(self.screen, (0, 0, 255), True, points)
 
 
             self.update_ui()
@@ -120,52 +163,59 @@ class Game():
 
 
     def update_ui(self):
-        if self.picked != None and self.selected == None:
+        if self.selected != None and self.selector == None:
 
-            if hasattr(self.picked, "sprite"):
-                sprite = self.picked.sprite
+            if hasattr(self.selected, "sprite"):
+                sprite = self.selected.sprite
             else:
-                sprite = self.picked
+                sprite = self.selected
 
 
-            self.selected = Sprite(sprite.rect.center, R.TILE_CACHE["data/selection_anim.png"], depth=10)
+            self.selector = Sprite(sprite.rect.center, R.TILE_CACHE["data/selection_anim.png"], depth=10)
 
             size = max(sprite.rect.w, sprite.rect.w)
 
-            self.selected.scale_to(size,size)
-            self.selected.x_y = (sprite.x_y[0], sprite.x_y[1])
-            self.sprites.add(self.selected)
-        elif self.picked == None and self.selected != None:
-            self.selected.kill()
-            self.selected = None
+            self.selector.scale_to(size,size)
+            self.selector.x_y = (sprite.x_y[0], sprite.x_y[1])
+            self.ui_overlay.add(self.selector)
+        elif self.selected == None and self.selector != None:
+            self.selector.kill()
+            self.selector = None
 
+        self.screen.blit(self.ui_background,(0,0))
 
 
 
     def mouse_clicked(self, (x, y), button):
         #check if inside map first?
         # if button == 1:
-        if 0 < x < 750 and 0 < y < 500:
+        if 0 < x < R.UI_LEFT and 0 < y < R.UI_DOWN:
             if button == 1:
-                self.picked = self.world.check_mouse_pos((x,y), self.camera.state.topleft)
-                if self.picked != None:
-                    print "picked city: " + self.picked.name + "  ", self.picked.sprite.x_y
-                    if self.selected != None:
+                if self.zoom == "galaxy":
+                    self.selected = self.galaxy.check_mouse_pos((x,y), self.camera.state.topleft)
+                elif self.zoom == "solar":
+                    self.selected = self.layer.check_mouse_pos((x,y), self.camera.state.topleft)
+                else:
+                    self.selected = None
+
+                if self.selected != None:
+                    print "picked object: " + self.selected.name + "  ", self.selected.x_y
+                    if self.selector != None:
                         # self.selected.rect.center = self.picked.sprite.rect.center
-                        self.selected.x_y = (self.picked.sprite.x_y[0], self.picked.sprite.x_y[1])
+                        self.selector.x_y = (self.selected.x_y[0], self.selected.x_y[1])
                             # .center = (self.picked.sprite.x_y[0] + self.camera.state.topleft[0], self.picked.sprite.x_y[1] + self.camera.state.topleft[1])
                 else:
                     for sprite in self.sprites.sprites():
                         if sprite.rect.collidepoint((x,y)):
-                            self.picked = sprite
+                            self.selected = sprite
         else:
-            #do menu things here.
+            #do menu click things here.
             pass
 
     def handle_events(self):
 
         for event in pg.event.get():
-            print event
+            # print event
             if event.type == pg.QUIT:
                 self.game_over = True
 
@@ -209,43 +259,27 @@ class Game():
             elif event.type == R.UIEVENT:
                 if hasattr(event, "button"):
                     print "do something"
-# def calculate_bezier(p, steps = 30):
-#     """
-#     Calculate a bezier curve from 4 control points and return a
-#     list of the resulting points.
-#
-#     The function uses the forward differencing algorithm described here:
-#     http://www.niksula.cs.hut.fi/~hkankaan/Homepages/bezierfast.html
-#     """
-#
-#     t = 1.0 / steps
-#     temp = t*t
-#
-#     f = p[0]
-#     fd = 3 * (p[1] - p[0]) * t
-#     fdd_per_2 = 3 * (p[0] - 2 * p[1] + p[2]) * temp
-#     fddd_per_2 = 3 * (3 * (p[1] - p[2]) + p[3] - p[0]) * temp * t
-#
-#     fddd = 2 * fddd_per_2
-#     fdd = 2 * fdd_per_2
-#     fddd_per_6 = fddd_per_2 / 3.0
-#
-#     points = []
-#     for x in range(steps):
-#         points.append(f)
-#         f += fd + fdd_per_2 + fddd_per_6
-#         fd += fdd + fddd_per_2
-#         fdd += fddd
-#         fdd_per_2 += fddd_per_2
-#     points.append(f)
-#     return points
-#
+
+
+    def switch_zoom(self, zoom, layer):
+        self.selector = None
+        self.camera.state.topleft = 0,0
+        self.zoom = zoom
+
+
+        #TODO: each of these layers might hold the sprites different. make it so it displays the right ones properly.
+        if zoom == "galaxy":
+            #do something special
+            pass
+        else:
+            self.sprites = layer.sprites
+
 
 
 if __name__ == "__main__":
     R.TILE_CACHE = TileCache(24, 24)
     pg.init()
-    pg.display.set_mode((1024, 768))
+    pg.display.set_mode((1440, 768))
     pg.display.set_caption('space trader tycoon')
 
     # gamefont =
