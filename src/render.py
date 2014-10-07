@@ -14,11 +14,35 @@ class Camera:
         self.camera_func = camera_func
         self.state = Rect(0, 0, width, height)
 
-    def apply(self, target):
-        return target.rect.move(self.state.topleft)
+    # def apply(self, target):
+    #     return target.rect.move(self.state.topleft)
 
     def update(self, target):
         self.state = self.camera_func(self.state, target.rect)
+
+    def bound(self, layer):
+
+        center = [None, None]
+        if self.state.center[0] > layer.w - self.state.w/2:
+            center[0] = layer.w - self.state.w/2
+        elif self.state.center[0] < 0 + self.state.w/2:
+            center[0] = self.state.w/2
+
+        if self.state.center[1] > layer.h - self.state.h/2:
+            center[1] = layer.h - self.state.h/2
+        elif self.state.center[1] < 0 + self.state.h/2:
+            center[1] = self.state.h/2
+
+        if center[0] != None:
+            if center[1] != None:
+                self.state.center = center
+            else:
+                center[1] = self.state.center[1]
+                self.state.center = center
+
+        elif center[1] != None:
+            center[0] = self.state.center[0]
+            self.state.center = center
 
 
 

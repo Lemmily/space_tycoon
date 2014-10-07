@@ -18,29 +18,36 @@ rand = random.Random()
 #         self.connections = {}
 
 
-class Star(Sprite):
-    def __init__(self, name, x=-1, y=-1):
-        Sprite.__init__(self, (200, 200), R.TILE_CACHE["data/planet_1.png"], scaling=2, ticks=8, depth=2, row=1)
+
+class ObjectOfInterest(Sprite):
+    def __init__(self, name, x, y, frames=None, sprite_pos=None, scaling=2, ticks=2, depth=1, row=0 ):
+        if frames == None:
+            frames =R.TILE_CACHE["data/city.png"]
+        Sprite.__init__(self, (x, y), frames, sprite_pos=sprite_pos, scaling=scaling, ticks=ticks, depth=depth, row=row)
         self.name = name
         self.x = x
         self.y = y
+        self.parent = None
+        self.zoom = "planet"
 
-class Planet(Sprite):
+class Star(ObjectOfInterest):
     def __init__(self, name, x=-1, y=-1):
-        Sprite.__init__(self, (200, 200), R.TILE_CACHE["data/planet_1.png"], scaling=2, ticks=8, depth=2)
-        self.name = name
-        self.x = x
-        self.y = y
+        ObjectOfInterest.__init__(self, name, x, y, R.TILE_CACHE["data/planet_1.png"], scaling=2, ticks=8, depth=2, row=1)
 
-class AsteroidCluster(Sprite):
+class Planet(ObjectOfInterest):
     def __init__(self, name, x=-1, y=-1):
-        Sprite.__init__(self, (200, 200), R.TILE_CACHE["data/planet_1.png"], sprite_pos=[0,3], scaling=1, ticks=8, depth=2, row=3)
-        self.name = name
-        self.x = x
-        self.y = y
+        ObjectOfInterest.__init__(self, name, x, y, R.TILE_CACHE["data/planet_1.png"], scaling=2, ticks=8, depth=2)
+
+class AsteroidCluster(ObjectOfInterest):
+    def __init__(self, name, x=-1, y=-1):
+        ObjectOfInterest.__init__(self, name, x, y, R.TILE_CACHE["data/planet_1.png"], sprite_pos=[0,3], scaling=1, ticks=8, depth=2, row=3)
 
 
-ALL_OOI = [Planet, AsteroidCluster]
+
+
+
+
+ALL_OOI = [Planet, AsteroidCluster] #Star not included as has special rules
 class NotableObject(Sprite):
     def __init__(self, sector,(x,y),(w,h), frames=None, sprite_pos=None, scaling=2, ticks=2, depth=1, row=0 ):
         """
@@ -59,10 +66,12 @@ class NotableObject(Sprite):
         self.sprites = SortedUpdates()
         self.objects = []
         self.orig_rect = self.rect.copy() #used to store the coordinate position with a rect. self.rect tracks image screen position.
+        self.parent = None
+        self.zoom = "solar"
 
     def check_mouse_pos(self, mouse_pos, cam_pos=(0,0)):
         for object in self.objects:
-            if object.sprite.rect.collidepoint(mouse_pos):
+            if object.rect.collidepoint(mouse_pos):
                 return object
         # tile_pos = ((mouse_pos[0] + 1 + cam_pos[0])/self.tile_width, (mouse_pos[1] + 1 + cam_pos[1])/self.tile_height)
         # if 0 > tile_pos[0] > len(self.tiles) - 1 or  0 > tile_pos[1] > len(self.tiles[0]) - 1:
@@ -78,6 +87,7 @@ class AsteroidField(NotableObject):
 
         for i in range(rand.randint(5, 15)):
             asteroid = AsteroidCluster("asteroid"+str(i), rand.randint(100, w), rand.randint(100, h))
+            asteroid.parent = self
             self.sprites.add(asteroid)
             self.objects.append(asteroid)
 
@@ -89,7 +99,7 @@ class RoguePlanet(NotableObject):
 class SolarSystem(NotableObject):
     def __init__(self, sector, (x, y), (w, h), tile_width=24, group=None):
 
-        NotableObject.__init__(self, sector,(x,y),(w,h), R.TILE_CACHE["data/planet_1.png"], ticks=8, row=2)
+        NotableObject.__init__(self, sector,(x,y),(w,h), R.TILE_CACHE["data/planet_1.png"], sprite_pos=[0,2], ticks=8, row=2)
         self.tile_width = tile_width #
         # self.objects = [] # moved to parent
         self.cities_dict = {}
@@ -101,9 +111,13 @@ class SolarSystem(NotableObject):
             planet = Planet("planet" + str(i))
             if self.place_planet(planet):
                 # planet.sprite = Sprite((planet.x, planet.y), R.TILE_CACHE["data/planet_1.png"], ticks=8)
+                planet.parent = self
                 if group != None:
                     group.add(planet)
                 self.sprites.add(planet)
+                self.objects.append(planet)
+                self.cities_dict[planet.name] = planet
+                # self.tiles[planet.x/self.tile_width][planet.y/self.tile_width] = planet
 
         # self.create_connections()
 
@@ -130,9 +144,6 @@ class SolarSystem(NotableObject):
                 tries = 0
 
         if placed:
-            self.objects.append(planet)
-            self.cities_dict[planet.name] = planet
-            # self.tiles[planet.x/self.tile_width][planet.y/self.tile_width] = planet
             return True
 
         else:
@@ -185,12 +196,15 @@ class Sector:
         self.points_of_interest = []
         self.sprites = SortedUpdates()
         self.rect = None
+        self.parent = None
+        self.zoom = "sector"
 
         for i in range(rand.randint(3, 9)):
             x,y = self.find_place()
             while x == False:
                 x,y = self.find_place()
             poi = rand.choice(ALL_POI)(self, (x, y), (512, 512))
+            poi.parent = self
             self.add_poi(poi)
 
 
@@ -256,7 +270,11 @@ class Sector:
 
         return False
 
-    def check_mouse_pos(self, x, y):
+    def check_mouse_pos(self,mouse_pos, camera_pos, (x,y)=(None,None)):
+        if x == None:
+            x = mouse_pos[0] - camera_pos[0]
+            y = mouse_pos[1] - camera_pos[1]
+
         for place in self.points_of_interest:
             if place.orig_rect.collidepoint(x, y): #TODO: potentially change it to use the places' rect instead of the sprite.
                 return place
@@ -270,6 +288,8 @@ class Galaxy:
         self.sector_rects = {}
         self.rects_sectors = {}
         self.connections = {}
+        self.parent = None
+        self.zoom = "galaxy"
 
         # self.sprites = SortedUpdates()
 
@@ -278,7 +298,7 @@ class Galaxy:
             self.sectors.append([])
             for j in range(4):
                 sector, rect = self.create_sector(i, j)
-
+                sector.parent = self
                 self.sectors[i].append(sector)
                 self.sector_rects[sector] = rect
                 self.rects_sectors[rect.topleft] = sector # Rect is not a hashable object so done it to the topleft tuple instead
@@ -301,7 +321,7 @@ class Galaxy:
         print mouse_pos, camera_pos, "=", x, y
 
         # if self.active_sector.rect.collidepoint(x,y):
-        return self.active_sector.check_mouse_pos(x, y)
+        return self.active_sector.check_mouse_pos(mouse_pos, camera_pos, (x, y))
 
 
 def length((x,y),(ox,oy)):

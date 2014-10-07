@@ -45,8 +45,8 @@ class Game():
 
         self.galaxy = Galaxy()#1024,768,R.tile_size, group=self.sprites)
         print "finished generating"
-        self.layer = self.galaxy.sectors[0][0].points_of_interest[0]
-        self.zoom = "galaxy" # galaxy, solar system, planet # # possibly sector too
+        self.layer = self.galaxy.active_sector
+        self.zoom = "sector" # galaxy, sector, solar system, planet
         self.selected = None
         self.selector = None #Sprite((-10, -10), R.TILE_CACHE["data/selection_anim.png"])
 
@@ -76,13 +76,8 @@ class Game():
 
     def render(self, dt):
         dirties = []
-        if self.zoom == "galaxy":
-            #render using galaxy
-            sprites = self.galaxy.active_sector.sprites
-            sprites.clear(self.screen, self.background)
-            sprites.update(self.camera, dt)
-            dirties.append(sprites.draw(self.screen))
-        elif self.zoom == "solar":
+        # if self.zoom == "galaxy":
+        if self.zoom == "solar" or "sector":
             self.layer.sprites.clear(self.screen, self.background)
             self.layer.sprites.update(self.camera, dt)
             dirties.append(self.layer.sprites.draw(self.screen))
@@ -160,6 +155,15 @@ class Game():
             self.camera.state.topleft = (0,0)
             self.pressed_key = None
 
+        if pressed(pg.K_x):
+            self.switch_zoom(self.selected.zoom, self.selected)
+            self.pressed_key = None
+
+        if pressed(pg.K_z):
+            if self.layer.parent:
+                self.switch_zoom(self.selected.parent.zoom, self.layer.parent)
+                self.pressed_key = None
+
 
 
     def update_ui(self):
@@ -193,7 +197,7 @@ class Game():
             if button == 1:
                 if self.zoom == "galaxy":
                     self.selected = self.galaxy.check_mouse_pos((x,y), self.camera.state.topleft)
-                elif self.zoom == "solar":
+                elif self.zoom == "solar" or "sector":
                     self.selected = self.layer.check_mouse_pos((x,y), self.camera.state.topleft)
                 else:
                     self.selected = None
@@ -253,6 +257,7 @@ class Game():
                     # dx = 2.0 * math.degrees(math.atan(math.sinh(math.pi))) * dmy / (256.0 * (2 ** self.actual_zoom))
                     # print "drag (%d,%d) > %.4f,%.4f" % (dmx,dmy,dx,dy)
                     self.camera.state.center = (self.camera.state.center[0] + dmx, self.camera.state.center[1] + dmy)
+                    self.camera.bound(self.layer)
                     # self.camera.state.center = (self.cam_pos.center[0] + dmx, self.cam_pos.center[1] + dmy)
                     # self.redraw = True
 
@@ -262,17 +267,19 @@ class Game():
 
 
     def switch_zoom(self, zoom, layer):
+        self.selector.kill()
         self.selector = None
         self.camera.state.topleft = 0,0
         self.zoom = zoom
 
 
-        #TODO: each of these layers might hold the sprites different. make it so it displays the right ones properly.
-        if zoom == "galaxy":
-            #do something special
-            pass
-        else:
-            self.sprites = layer.sprites
+        self.layer = layer
+        # #TODO: each of these layers might hold the sprites different. make it so it displays the right ones properly.
+        # if zoom == "galaxy":
+        #     #do something special
+        #     pass
+        # else:
+        #     self.sprites = layer.sprites
 
 
 
