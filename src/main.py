@@ -36,7 +36,7 @@ class Game():
         self.ui_background.blit(self.ui_background_bottom, (0,R.UI_DOWN))
         self.ui_background.blit(self.ui_background_right, (R.UI_LEFT,0))
 
-        self.camera = Camera(simple_camera, 768, 512)
+        self.camera = Camera(simple_camera, R.MAP_WINDOW_WIDTH, R.MAP_WINDOW_HEIGHT)
         self.sprites = SortedUpdates()
         self.ui_overlay = RenderUpdates()
 
@@ -55,12 +55,12 @@ class Game():
         thing3 = Sprite((200, 200), R.TILE_CACHE["data/planet_1.png"], scaling=2, ticks=8, depth=2)
         thing4 = Sprite((500, 350), R.TILE_CACHE["data/planet_1.png"], scaling=2, ticks=8, depth=2, row=1)
         # thing = Sprite((100, 100), R.TILE_CACHE["data/planet_1.png"], scaling=3, ticks=4)
-        thing2 = ParallaxSprite((100, 100), R.TILE_CACHE["data/two.png"], sprite_pos=[1,0])
-        self.sprites.add( thing2, thing3, thing4)  # , self.world)
-        thing2 = ParallaxSprite((500, 500), R.TILE_CACHE["data/two.png"], sprite_pos=[1,0], offset=0.1)
-        self.sprites.add(thing2)
-        thing2 = ParallaxSprite((800, 200), R.TILE_CACHE["data/two.png"], sprite_pos=[1,0])
-        self.sprites.add(thing2)
+        # thing2 = ParallaxSprite((100, 100), R.TILE_CACHE["data/two.png"], sprite_pos=[1,0])
+        # self.sprites.add( thing2, thing3, thing4)  # , self.world)
+        # thing2 = ParallaxSprite((500, 500), R.TILE_CACHE["data/two.png"], sprite_pos=[1,0], offset=0.1)
+        # self.sprites.add(thing2)
+        # thing2 = ParallaxSprite((800, 200), R.TILE_CACHE["data/two.png"], sprite_pos=[1,0])
+        # self.sprites.add(thing2)
 
 
         self.ship = Ship(group=self.sprites)
@@ -79,6 +79,10 @@ class Game():
         # if self.zoom == "galaxy":
         if self.zoom == "solar" or "sector":
             self.layer.sprites.clear(self.screen, self.background)
+            if self.zoom == "sector":
+                for connection in self.layer.connections.values():
+                    points = self.layer.get_connections(connection, self.camera)
+                    gfxdraw.bezier(self.screen, points, 10, (255,0,0))
             self.layer.sprites.update(self.camera, dt)
             dirties.append(self.layer.sprites.draw(self.screen))
         else:
@@ -98,7 +102,6 @@ class Game():
         while not self.game_over:
             dt = 1/float(clock.tick(30))
 
-
             ###temp
             self.screen.blit(self.background, (0,0))
             ####
@@ -114,11 +117,11 @@ class Game():
 
             # self.ui_overlay.clear(self.screen, self.background)
             # self.ui_overlay.update()
-
-            for connection in self.galaxy.connections.values():
-                points = self.galaxy.get_connections(connection, self.camera)
-
-                gfxdraw.bezier(self.screen, points, 10, (255,0,0))
+            #
+            # for connection in self.galaxy.connections.values():
+            #     points = self.galaxy.get_connections(connection, self.camera)
+            #
+            #     gfxdraw.bezier(self.screen, points, 10, (255,0,0))
 
             # dirties = self.sprites.draw(self.screen)
             dirties.append(self.ui_overlay.draw(self.screen))
@@ -156,14 +159,14 @@ class Game():
             self.pressed_key = None
 
         if pressed(pg.K_x):
-            self.switch_zoom(self.selected.zoom, self.selected)
+            if hasattr(self.selected, "sprites"):
+                self.switch_zoom(self.selected.zoom, self.selected)
             self.pressed_key = None
 
         if pressed(pg.K_z):
-            if self.layer.parent:
-                self.switch_zoom(self.selected.parent.zoom, self.layer.parent)
-                self.pressed_key = None
-
+            if self.layer.parent != None:
+                self.switch_zoom(self.layer.parent.zoom, self.layer.parent)
+            self.pressed_key = None
 
 
     def update_ui(self):
@@ -267,10 +270,15 @@ class Game():
 
 
     def switch_zoom(self, zoom, layer):
-        self.selector.kill()
-        self.selector = None
+        self.ui_overlay.clear(self.screen, self.background)
         self.camera.state.topleft = 0,0
         self.zoom = zoom
+
+        if self.selector != None:
+            self.selector.kill()
+            self.selector = None
+
+        self.selected = None
 
 
         self.layer = layer

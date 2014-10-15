@@ -1,0 +1,58 @@
+<?xml version="1.0"?>
+<data>
+    <raw name="iron ore">
+        <location>mine</location>
+        <output>1.0</output>
+        <time>3.0</time>
+    </raw>
+    <raw name="copper ore">
+        <location>mine</location>
+        <output>1.0</output>
+        <time>3.0</time>
+    </raw>
+    <raw name="fuel">
+        <location>mine</location>
+        <output>1.0</output>
+        <time>3.0</time>
+    </raw>
+    <raw name="stone">
+        <location name="quarry">mine</location>
+        <output>1.0</output>
+        <time>2.5</time>
+    </raw>
+    <raw name="slag">
+        <location name="quarry">furnace</location>
+        <output>1.0</output>
+        <time>1.0</time>
+    </raw>
+
+    <processed name="iron bar">
+        <location>furnace</location>
+        <need type="iron ore" amount="1"/>
+        <need type="fuel" amount="1"/>
+        <output>1.0</output>
+        <time>1.0</time>
+        <byproduct type="slag" amount="0.1" chance="0.1"/>
+    </processed>
+    <processed name="copper plate">
+        <location>furnace</location>
+        <need type="copper ore" amount="1"/>
+        <need type="fuel" amount="1"/>
+        <output>1.0</output>
+        <time>1.0</time>
+        <byproduct type="slag" amount="0.1" chance="0.1"/>
+    </processed>
+    <processed name="copper wire">
+        <location>furnace</location>
+        <need type="copper plate" amount="2"/>
+        <output>2.0</output>
+        <time>0.5</time>
+    </processed>
+    <processed name="circuit board">
+        <location>furnace</location>
+        <need type="copper wire" amount="3"/>
+        <need type="iron bar" amount="1"/>
+        <output>1.0</output>
+        <time>2.5</time>
+    </processed>
+</data>

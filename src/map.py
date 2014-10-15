@@ -3,6 +3,8 @@ from pygame.rect import Rect
 from src import R
 from src.render import Sprite, SortedUpdates
 
+import pygame as pg
+
 __author__ = 'Emily'
 
 import random
@@ -68,6 +70,7 @@ class NotableObject(Sprite):
         self.orig_rect = self.rect.copy() #used to store the coordinate position with a rect. self.rect tracks image screen position.
         self.parent = None
         self.zoom = "solar"
+        self.connections = {}
 
     def check_mouse_pos(self, mouse_pos, cam_pos=(0,0)):
         for object in self.objects:
@@ -106,10 +109,20 @@ class SolarSystem(NotableObject):
         # self.connections = {}
         # self.sprite = Sprite((x, y)
 
+        self.bg = Sprite()
+        center = self.bg.rect.center
+        self.bg.image = pg.Surface((w,h))
+        self.bg.rect = self.image.get_rect()
+        self.bg.rect.center = center
+        self.sprites.add(self.bg)
+        self.star = star = Star("star" + str( sector.x) + str(sector.y), w/2, h/2)
+        self.sprites.add(star)
+        self.objects.append(star)
 
         for i in range(rand.randint(2, 6)):
-            planet = Planet("planet" + str(i))
-            if self.place_planet(planet):
+            x, y = self.place_planet()
+            if x != -1:
+                planet = Planet("planet" + str(i), x, y)
                 # planet.sprite = Sprite((planet.x, planet.y), R.TILE_CACHE["data/planet_1.png"], ticks=8)
                 planet.parent = self
                 if group != None:
@@ -117,11 +130,13 @@ class SolarSystem(NotableObject):
                 self.sprites.add(planet)
                 self.objects.append(planet)
                 self.cities_dict[planet.name] = planet
+                pg.gfxdraw.aacircle(self.bg.image, w/2, h/2, int(find_length(planet.x_y, star.x_y)), (200,200,100))
+                pg.draw.circle(self.bg.image, (200,200,100), (w/2, h/2), int(find_length(planet.x_y, star.x_y)), 2)
                 # self.tiles[planet.x/self.tile_width][planet.y/self.tile_width] = planet
 
         # self.create_connections()
 
-    def place_planet(self, planet):
+    def place_planet(self):
         """
         Tries to place the city on the map,
         :param planet:
@@ -136,25 +151,19 @@ class SolarSystem(NotableObject):
             x = rand.randint(self.tile_width, self.w - self.tile_width)
             y = rand.randint(self.tile_width, self.h - self.tile_width - 1)
             # y = rand.randint(1, len(self.tiles[x]) - 2)
-            planet.x,planet.y = x,y
-
-            placed = self.check_planet_distances(planet, distance)
+            placed = self.check_planet_distances((x,y), distance)
             if tries >= 5:
                 distance -= 1
                 tries = 0
 
-        if placed:
-            return True
+        return x, y
 
-        else:
+    def check_planet_distances(self, (x,y), distance=8):
+        if x == -1:
             return False
-
-    def check_planet_distances(self, planet, distance=8):
-        if planet.x == -1:
-            return False
-        for other_city in self.objects:
-            dx = abs(planet.x - other_city.x)
-            dy = abs(planet.y - other_city.y)
+        for other_object in self.objects:
+            dx = abs(x - other_object.x)
+            dy = abs(y - other_object.y)
             if math.sqrt(dx * dx + dy * dy) < distance:
                 return False
 
@@ -205,7 +214,10 @@ class Sector:
                 x,y = self.find_place()
             poi = rand.choice(ALL_POI)(self, (x, y), (512, 512))
             poi.parent = self
+            poi.name = poi.__class__.__name__.capitalize() + str(i)
             self.add_poi(poi)
+
+        self.create_connections()
 
 
 
@@ -224,6 +236,14 @@ class Sector:
 
         return True
 
+    def get_connections(self, connection, camera):
+        offset = camera.state.topleft
+        new_connections = []
+        for pair in connection:
+            new_connections.append((pair[0] + offset[0], pair[1] + offset[1]))
+
+        return new_connections
+
     def create_connections(self):
         for poi in self.points_of_interest:
             connected = False
@@ -234,6 +254,8 @@ class Sector:
                 # other_city = self.cities_dict[connection]
                 if other_poi.name != poi.name and not ( self.connections.has_key(poi.name + other_poi.name) or self.connections.has_key(other_poi.name + poi.name)):
                     connected = self.add_connection(poi, other_poi)
+                else:
+                    break
 
     def find_place(self):
         x, y = 0, 0
@@ -262,7 +284,7 @@ class Sector:
 
     def check_distance(self, x, y, distance):
         for object in self.points_of_interest:
-            if length((x,y), (object.x,object.y)) > distance:
+            if find_length((x,y), (object.x,object.y)) > distance:
                 return True
 
         if len(self.points_of_interest) == 0:
@@ -294,9 +316,9 @@ class Galaxy:
         # self.sprites = SortedUpdates()
 
 
-        for i in range(4):
+        for i in range(2):
             self.sectors.append([])
-            for j in range(4):
+            for j in range(2):
                 sector, rect = self.create_sector(i, j)
                 sector.parent = self
                 self.sectors[i].append(sector)
@@ -324,7 +346,7 @@ class Galaxy:
         return self.active_sector.check_mouse_pos(mouse_pos, camera_pos, (x, y))
 
 
-def length((x,y),(ox,oy)):
+def find_length((x,y),(ox,oy)):
     dx = abs(x - ox)
     dy = abs(y - oy)
     return math.sqrt(dx * dx + dy * dy)

@@ -22,16 +22,19 @@ class Camera:
 
     def bound(self, layer):
 
+        #not entirely sure this is doing what i want it to do...
         center = [None, None]
-        if self.state.center[0] > layer.w - self.state.w/2:
-            center[0] = layer.w - self.state.w/2
-        elif self.state.center[0] < 0 + self.state.w/2:
-            center[0] = self.state.w/2
+        if layer.w > self.state.w:
+            if self.state.center[0] > layer.w - self.state.w/2:
+                center[0] = layer.w - self.state.w/2
+            elif self.state.topleft[0] < 0 :
+                self.state.topleft = 0, self.state.topleft[1]
 
-        if self.state.center[1] > layer.h - self.state.h/2:
-            center[1] = layer.h - self.state.h/2
-        elif self.state.center[1] < 0 + self.state.h/2:
-            center[1] = self.state.h/2
+        if layer.h > self.state.h:
+            if self.state.center[1] > layer.h - self.state.h/2:
+                center[1] = layer.h - self.state.h/2
+            elif self.state.center[1] < 0 + self.state.h/2:
+                center[1] = self.state.h/2
 
         if center[0] != None:
             if center[1] != None:
@@ -41,6 +44,7 @@ class Camera:
                 self.state.center = center
 
         elif center[1] != None:
+            #only goes here if center[0] is None
             center[0] = self.state.center[0]
             self.state.center = center
 
@@ -133,17 +137,20 @@ class Sprite(pg.sprite.Sprite):
             #         self.frames[i].append(frame.copy())
             #         # self.frames[i].append(frames[i][j].copy())
         else:
-            self.frames = [[pg.Surface([R.TILE_SIZE, R.TILE_SIZE])]]
+            surface = pg.Surface([R.TILE_SIZE, R.TILE_SIZE])
+            surface.fill((44,44,44))
+            surface.set_colorkey((44,44,44))
+            self.frames = [[surface]]
 
-        if scaling != None:
+        if scaling != None and frames != None:
             for i in range(len(frames)):
                 for j in range(len(frames[i])):
                     image = frames[i][j].copy()
                     t_image = pg.transform.scale(image, (image.get_width() * scaling, image.get_height() * scaling))
                     self.frames[i][j] = t_image
                     self.orig_frames[i][j] = image
-        else:
-            self.frames = frames
+        # else:
+        #     self.frames = frames
 
 
         if sprite_pos != None:
