@@ -53,6 +53,6 @@
         <need type="copper wire" amount="3"/>
         <need type="iron bar" amount="1"/>
         <output>1.0</output>
-        <time>2.5</time>
+        <time>5.5</time>
     </processed>
 </data>
