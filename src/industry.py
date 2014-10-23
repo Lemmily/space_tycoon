@@ -244,8 +244,9 @@ class Depot:
             for resource in self.requests[requester]:
                 delivery[resource.name] = resource_division[resource.name][0]
                 self.storage[resource.name] -= resource_division[resource.name][0]
-            requester.receive(delivery)
-            self.remove_request(requester)
+            if len(delivery.keys()) > 0:
+                requester.receive(delivery)
+                self.remove_request(requester)
 
 
 
@@ -322,6 +323,7 @@ class IndustryManager:
 def main():
     global raw_resources, processed_resources, resource_dict
 
+#REMOVED THESE AS NOW MADE THROUGH XML
     # iron_ore = Resource("iron ore", "mine")
     # copper_ore = Resource("copper ore", "mine")
     # fuel = Resource("fuel", "mine")

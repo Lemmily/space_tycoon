@@ -1,3 +1,4 @@
+import math
 from pygame.rect import Rect
 
 __author__ = 'Emily'
@@ -73,3 +74,9 @@ class QuadTree:
                 return 3
             else:
                 return 2
+
+
+def find_length((x,y),(ox,oy)):
+    dx = abs(x - ox)
+    dy = abs(y - oy)
+    return math.sqrt(dx * dx + dy * dy)

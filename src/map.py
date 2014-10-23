@@ -1,9 +1,11 @@
 import math
+
 from pygame.rect import Rect
+import pygame as pg
 from src import R
 from src.render import Sprite, SortedUpdates
+from src.utils import find_length
 
-import pygame as pg
 
 __author__ = 'Emily'
 
@@ -18,7 +20,6 @@ rand = random.Random()
 #         self.x = x
 #         self.y = y
 #         self.connections = {}
-
 
 
 class ObjectOfInterest(Sprite):
@@ -43,6 +44,10 @@ class Planet(ObjectOfInterest):
 class AsteroidCluster(ObjectOfInterest):
     def __init__(self, name, x=-1, y=-1):
         ObjectOfInterest.__init__(self, name, x, y, R.TILE_CACHE["data/planet_1.png"], sprite_pos=[0,3], scaling=1, ticks=8, depth=2, row=3)
+
+class Gateway(ObjectOfInterest):
+    def __init__(self, name, x=-1, y=-1):
+        ObjectOfInterest.__init__(self, name, x, y, R.TILE_CACHE["data/planet_1.png"], sprite_pos=[0,4], scaling=2, ticks=8, depth=2, row=3)
 
 
 
@@ -119,22 +124,31 @@ class SolarSystem(NotableObject):
         self.sprites.add(star)
         self.objects.append(star)
 
+        gx, gy= self.place_planet()
+        gateway = Gateway("gateway", gx, gy)
+        self.add_object(gateway)
+
         for i in range(rand.randint(2, 6)):
             x, y = self.place_planet()
             if x != -1:
                 planet = Planet("planet" + str(i), x, y)
                 # planet.sprite = Sprite((planet.x, planet.y), R.TILE_CACHE["data/planet_1.png"], ticks=8)
-                planet.parent = self
-                if group != None:
-                    group.add(planet)
-                self.sprites.add(planet)
-                self.objects.append(planet)
-                self.cities_dict[planet.name] = planet
+                self.add_object(planet)
                 pg.gfxdraw.aacircle(self.bg.image, w/2, h/2, int(find_length(planet.x_y, star.x_y)), (200,200,100))
                 pg.draw.circle(self.bg.image, (200,200,100), (w/2, h/2), int(find_length(planet.x_y, star.x_y)), 2)
                 # self.tiles[planet.x/self.tile_width][planet.y/self.tile_width] = planet
 
         # self.create_connections()
+
+
+    def add_object(self, object):
+        object.parent = self
+        # if group != None:
+        #     group.add(planet)
+        self.sprites.add(object)
+        self.objects.append(object)
+        self.cities_dict[object.name] = object
+
 
     def place_planet(self):
         """
@@ -346,7 +360,11 @@ class Galaxy:
         return self.active_sector.check_mouse_pos(mouse_pos, camera_pos, (x, y))
 
 
-def find_length((x,y),(ox,oy)):
-    dx = abs(x - ox)
-    dy = abs(y - oy)
-    return math.sqrt(dx * dx + dy * dy)
+
+
+class Node:
+    """
+        Node for pathfinding. Represents galaxy and nodes within.
+    """
+    def __init__(self):
+        pass

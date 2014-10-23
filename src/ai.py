@@ -21,7 +21,6 @@ class PathFinder():
 
 
 
-
 class PathNode():
     def __init__(self, location, cost, parent=None, end=None):
         self.location = location
