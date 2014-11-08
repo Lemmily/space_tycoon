@@ -192,7 +192,6 @@ class Game():
         self.screen.blit(self.ui_background,(0,0))
 
 
-
     def mouse_clicked(self, (x, y), button):
         #check if inside map first?
         # if button == 1:
@@ -220,7 +219,6 @@ class Game():
             pass
 
     def handle_events(self):
-
         for event in pg.event.get():
             # print event
             if event.type == pg.QUIT:
@@ -243,7 +241,6 @@ class Game():
                 # if event.button == 1:  # left button
                 if event.button == 2:  # middle button
                     self.drag = True
-
 
             elif event.type == MOUSEBUTTONUP:
                 if event.button == 1: #left

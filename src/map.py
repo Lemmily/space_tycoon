@@ -32,6 +32,7 @@ class ObjectOfInterest(Sprite):
         self.y = y
         self.parent = None
         self.zoom = "planet"
+        self.node = Node()
 
 class Star(ObjectOfInterest):
     def __init__(self, name, x=-1, y=-1):
@@ -48,6 +49,8 @@ class AsteroidCluster(ObjectOfInterest):
 class Gateway(ObjectOfInterest):
     def __init__(self, name, x=-1, y=-1):
         ObjectOfInterest.__init__(self, name, x, y, R.TILE_CACHE["data/planet_1.png"], sprite_pos=[0,4], scaling=2, ticks=8, depth=2, row=3)
+        self.node = Node(self.name, True, "solar")
+
 
 
 
@@ -361,10 +364,82 @@ class Galaxy:
 
 
 
+class PathFinder:
+    def __init__(self, access, max_dist_between_nodes):
+        self.access = access
+        self.max_dist = max_dist_between_nodes
+
 
 class Node:
     """
         Node for pathfinding. Represents galaxy and nodes within.
     """
-    def __init__(self):
-        pass
+    def __init__(self, name, tech_barrier=False, access_level = None):
+        self.name = name
+        self.tech_barrier = tech_barrier
+        self.access_level = access_level
+        self.neighbours = {}
+        self.neighbours_by_access = {}
+
+    def add_neighbour(self, neighbour):
+        """
+
+        :param neighbour: Node
+        :return:
+        """
+        if self.name != neighbour.name and self.neighbours.has_key(neighbour.name):
+            neighbour[neighbour.name] = neighbour
+            if self.neighbours_by_access.has_key(neighbour.access_level):
+                self.neighbours_by_access[neighbour.access_level].append(neighbour)
+            else:
+                self.neighbours_by_access[neighbour.access_level] = [neighbour]
+
+
+class PathNode:
+    OPEN = 0
+    CLOSED = 1
+
+    def __init__(self, object, cost, parentNode=None, endNode=None):
+        """
+
+        :param object: string - name of object representing.
+        :param cost: cost to enter node.
+        :param parentNode:
+        :param endNode:
+        :return:
+        """
+        self.direct_cost = cost
+        self.open = self.OPEN
+        self.parent_node = parentNode
+        self.end_node = endNode
+
+        self.object= object
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

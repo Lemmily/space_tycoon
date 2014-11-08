@@ -323,21 +323,6 @@ class IndustryManager:
 def main():
     global raw_resources, processed_resources, resource_dict
 
-#REMOVED THESE AS NOW MADE THROUGH XML
-    # iron_ore = Resource("iron ore", "mine")
-    # copper_ore = Resource("copper ore", "mine")
-    # fuel = Resource("fuel", "mine")
-    # iron_plate = Resource("iron plate", "furnace", needs={iron_ore: 1, fuel: 1})
-    # copper_plate = Resource("copper plate", "furnace", needs={copper_ore: 1, fuel: 1})
-    #
-    #
-    # # iron_bar = Resource("iron bar", "factory", needs=[(iron_plate, 2)])
-    # # copper_wire = Resource("copper wire", "factory", needs=[(copper_plate, 2)], output=3)
-    # #
-    # # circuit = Resource("circuit board", "factory", needs= [(iron_plate, 1), (copper_wire, 2)])
-    #
-    # raw_resources = [iron_ore, copper_ore, fuel]
-    # processed_resources = [iron_plate, copper_plate ] #iron_bar, copper_wire, circuit
     pg.init()
     # pg.display.set_mode((1440, 768))
     # pg.display.set_caption('space trader tycoon')
@@ -358,7 +343,6 @@ def handle_events():
         # print event
         if event.type == pg.QUIT:
             game_over = True
-
 
 raw_resources = []
 processed_resources = []
@@ -418,6 +402,7 @@ def construct_resources_tables():
         resource_dict[name] = resource
 
 
+    # Hook up the resource objects to the needs of processed resources.
     for entry in t_processed_resources:
         res = entry[0]
         needs = entry[1]
