@@ -1,15 +1,15 @@
 import math
+import random
 
 from pygame.rect import Rect
 import pygame as pg
-from src import R
+from src import R, ai
 from src.render import Sprite, SortedUpdates
 from src.utils import find_length
 
 
 __author__ = 'Emily'
 
-import random
 
 rand = random.Random()
 
@@ -32,7 +32,12 @@ class ObjectOfInterest(Sprite):
         self.y = y
         self.parent = None
         self.zoom = "planet"
-        self.node = Node()
+        # self.node = Node()
+        self.connections = {}
+
+    @property
+    def location(self):
+        return (self.x,self.y)
 
 class Star(ObjectOfInterest):
     def __init__(self, name, x=-1, y=-1):
@@ -49,7 +54,7 @@ class AsteroidCluster(ObjectOfInterest):
 class Gateway(ObjectOfInterest):
     def __init__(self, name, x=-1, y=-1):
         ObjectOfInterest.__init__(self, name, x, y, R.TILE_CACHE["data/planet_1.png"], sprite_pos=[0,4], scaling=2, ticks=8, depth=2, row=3)
-        self.node = Node(self.name, True, "solar")
+        # self.node = Node(self.name, True, "solar")
 
 
 
@@ -80,6 +85,11 @@ class NotableObject(Sprite):
         self.zoom = "solar"
         self.connections = {}
 
+
+    @property
+    def location(self):
+        return (self.x,self.y)
+
     def check_mouse_pos(self, mouse_pos, cam_pos=(0,0)):
         for object in self.objects:
             if object.rect.collidepoint(mouse_pos):
@@ -89,6 +99,42 @@ class NotableObject(Sprite):
         #     return None
         return None
         # return self.tiles[tile_pos[0]][tile_pos[1]]
+
+    def get_connections(self, connection, camera):
+        """
+        get connection tuples, WITH the offset from the camera applied.
+        :param connection:
+        :param camera:
+        :return:
+        """
+        offset = camera.state.topleft
+        new_connections = []
+        for pair in connection:
+            new_connections.append((pair[0] + offset[0], pair[1] + offset[1]))
+
+        return new_connections
+
+    def add_connection(self, object, other_object):
+        object.connections[other_object.name] = ((object.x, object.y), (other_object.x, other_object.y))
+        midpoint = (max(object.x, other_object.x) - abs(object.x - other_object.x)/3, max(object.y, other_object.y) - abs(object.y - other_object.y)/3)
+        self.connections[object.name + other_object.name] = ((object.x, object.y), midpoint, (other_object.x, other_object.y))
+        return True
+
+    def make_graph(self):
+        actual_x = self.sector.x * self.sector.w + self.x
+        actual_y = self.sector.y * self.sector.h + self.y
+        self.graph = ai.Graph((actual_x, actual_y))
+
+        for object in self.objects:
+            obj_node = ai.Node(self.name + "-" + object.name,object.location, 20 )
+            self.graph.add_edge(obj_node) #todo: create an appropriate cost lookup.
+
+        for object in self.objects:
+            connections = []
+            for connection in object.connections.values():
+                connections.append(connection)
+
+            self.graph.add_connection(str(object.location), connections)
 
 class AsteroidField(NotableObject):
     def __init__(self, sector, (x, y), (w, h), tile_width=24, group=None):
@@ -186,22 +232,11 @@ class SolarSystem(NotableObject):
 
         return True # good position in terms of distances.
 
-
-
-    def get_connections(self, connection, camera):
-        offset = camera.state.topleft
-        new_connections = []
-        for pair in connection:
-            new_connections.append((pair[0] + offset[0], pair[1] + offset[1]))
-
-        return new_connections
-
-    def add_connection(self, planet, other_planet):
-        planet.connections[other_planet.name] = ((planet.x, planet.y), (other_planet.x, other_planet.y))
-        midpoint = (max(planet.x, other_planet.x) - abs(planet.x - other_planet.x)/3, max(planet.y, other_planet.y) - abs(planet.y - other_planet.y)/3)
-        self.connections[planet.name + other_planet.name] = ((planet.x, planet.y), midpoint, (other_planet.x, other_planet.y))
+    def add_connection(self, object, other_object):
+        object.connections[other_object.name] = ((object.x, object.y), (other_object.x, other_object.y))
+        midpoint = (max(object.x, other_object.x) - abs(object.x - other_object.x)/3, max(object.y, other_object.y) - abs(object.y - other_object.y)/3)
+        self.connections[object.name + other_object.name] = ((object.x, object.y), midpoint, (other_object.x, other_object.y))
         return True
-
 
 
 
@@ -235,7 +270,7 @@ class Sector:
             self.add_poi(poi)
 
         self.create_connections()
-
+        self.make_graph()
 
 
     def add_poi(self, poi):
@@ -320,6 +355,12 @@ class Sector:
 
         return None
 
+    def make_graph(self):
+        for point in self.points_of_interest:
+            point.make_graph()
+
+
+
 
 class Galaxy:
     def __init__(self):
@@ -363,57 +404,60 @@ class Galaxy:
         return self.active_sector.check_mouse_pos(mouse_pos, camera_pos, (x, y))
 
 
-
-class PathFinder:
-    def __init__(self, access, max_dist_between_nodes):
-        self.access = access
-        self.max_dist = max_dist_between_nodes
+    def graphify_galaxy(self):
+        pass
 
 
-class Node:
-    """
-        Node for pathfinding. Represents galaxy and nodes within.
-    """
-    def __init__(self, name, tech_barrier=False, access_level = None):
-        self.name = name
-        self.tech_barrier = tech_barrier
-        self.access_level = access_level
-        self.neighbours = {}
-        self.neighbours_by_access = {}
-
-    def add_neighbour(self, neighbour):
-        """
-
-        :param neighbour: Node
-        :return:
-        """
-        if self.name != neighbour.name and self.neighbours.has_key(neighbour.name):
-            neighbour[neighbour.name] = neighbour
-            if self.neighbours_by_access.has_key(neighbour.access_level):
-                self.neighbours_by_access[neighbour.access_level].append(neighbour)
-            else:
-                self.neighbours_by_access[neighbour.access_level] = [neighbour]
-
-
-class PathNode:
-    OPEN = 0
-    CLOSED = 1
-
-    def __init__(self, object, cost, parentNode=None, endNode=None):
-        """
-
-        :param object: string - name of object representing.
-        :param cost: cost to enter node.
-        :param parentNode:
-        :param endNode:
-        :return:
-        """
-        self.direct_cost = cost
-        self.open = self.OPEN
-        self.parent_node = parentNode
-        self.end_node = endNode
-
-        self.object= object
+# class PathFinder:
+#     def __init__(self, access, max_dist_between_nodes):
+#         self.access = access
+#         self.max_dist = max_dist_between_nodes
+#
+#
+# class Node:
+#     """
+#         Node for pathfinding. Represents galaxy and nodes within.
+#     """
+#     def __init__(self, name, tech_barrier=False, access_level = None):
+#         self.name = name
+#         self.tech_barrier = tech_barrier
+#         self.access_level = access_level
+#         self.neighbours = {}
+#         self.neighbours_by_access = {}
+#
+#     def add_neighbour(self, neighbour):
+#         """
+#
+#         :param neighbour: Node
+#         :return:
+#         """
+#         if self.name != neighbour.name and self.neighbours.has_key(neighbour.name):
+#             neighbour[neighbour.name] = neighbour
+#             if self.neighbours_by_access.has_key(neighbour.access_level):
+#                 self.neighbours_by_access[neighbour.access_level].append(neighbour)
+#             else:
+#                 self.neighbours_by_access[neighbour.access_level] = [neighbour]
+#
+#
+# class PathNode:
+#     OPEN = 0
+#     CLOSED = 1
+#
+#     def __init__(self, object, cost, parentNode=None, endNode=None):
+#         """
+#
+#         :param object: string - name of object representing.
+#         :param cost: cost to enter node.
+#         :param parentNode:
+#         :param endNode:
+#         :return:
+#         """
+#         self.direct_cost = cost
+#         self.open = self.OPEN
+#         self.parent_node = parentNode
+#         self.end_node = endNode
+#
+#         self.object= object
 
 
 
