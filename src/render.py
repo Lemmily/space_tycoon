@@ -21,40 +21,102 @@ class Camera:
         self.state = self.camera_func(self.state, target.rect)
 
     def bound(self, layer):
-
         #not entirely sure this is doing what i want it to do...
-        center = [None, None]
+
+        #if the map is wider than the screen
         if layer.w > self.state.w:
-            if self.state.center[0] > layer.w - self.state.w/2:
-                center[0] = layer.w - self.state.w/2
-            elif self.state.topleft[0] < 0 :
-                self.state.topleft = 0, self.state.topleft[1]
+            if self.state.right > layer.w - self.state.w/2 :
+                self.state.right = layer.w - self.state.w/2
+            elif self.state.left < -layer.w/2 + self.state.w/2:
+                self.state.left = -layer.w/2 + self.state.w/2
+        else:
+            if self.state.left > self.state.w/2 - layer.w/2:
+                self.state.left = self.state.w/2 - layer.w/2
+            elif self.state.right < self.state.w/2 + layer.w/2:
+                self.state.right = self.state.w/2 + layer.w/2
 
-        if layer.h > self.state.h:
-            if self.state.center[1] > layer.h - self.state.h/2:
-                center[1] = layer.h - self.state.h/2
-            elif self.state.center[1] < 0 + self.state.h/2:
-                center[1] = self.state.h/2
+        ##if the map is taller than the screen
+        if layer.w > self.state.w:
+            if self.state.top > layer.h - self.state.h/2 :
+                self.state.top = layer.h - self.state.h/2
+            elif self.state.bottom < -layer.h/2 + self.state.h/2:
+                self.state.bottom = -layer.h/2 + self.state.h/2
+        else:
+            if self.state.top > self.state.h/2 - layer.h/2:
+                self.state.top = self.state.h/2 - layer.h/2
+            elif self.state.bottom < self.state.h/2 + layer.h/2:
+                self.state.bottom = self.state.h/2 + layer.h/2
 
-        if center[0] != None:
-            if center[1] != None:
-                self.state.center = center
-            else:
-                center[1] = self.state.center[1]
-                self.state.center = center
 
-        elif center[1] != None:
-            #only goes here if center[0] is None
-            center[0] = self.state.center[0]
-            self.state.center = center
+
+        # if layer.h > self.state.h:
+        #     if self.state.center[1] > layer.h/2:
+        #         self.state.top = layer.h/2
+        #     elif self.state.center[1] < -layer.h/2 :
+        #         center[1] = -layer.h/2
+        # else:
+        #     if self.state.center[1] > self.state.h/2 :
+        #         center[1] = self.state.h/2
+        #     elif self.state.center[1] < -self.state.h/2:
+        #         center[1] = -self.state.h/2
+
+
+
+
+
+        # if layer.w > self.state.w:
+        #     if self.state.center[0] > layer.w :
+        #         center[0] = layer.w
+        #     elif self.state.center[0] < 0 :
+        #         center[1] = self.state.center[1]
+        # else:
+        #     if self.state.center[0] < 0:
+        #         center[0] = self.state.center[0]#layer.w - self.state.w/2
+        #     elif self.state.center[0] > layer.w :
+        #         center[0] = layer.w
+        #
+        #
+        # if layer.h > self.state.h:
+        #     if self.state.center[1] > layer.h :
+        #         center[1] = layer.h
+        #     elif self.state.center[1] < 0 :
+        #         center[1] = 0
+        # else:
+        #     if self.state.center[1] < 0:
+        #         center[1] = 0#layer.w - self.state.w/2
+        #     elif self.state.center[1] > layer.h :
+        #         center[1] = layer.h
+
+
+
+        #
+        # if center[0] != None:
+        #     if center[1] != None:
+        #         self.state.center = center
+        #     else:
+        #         center[1] = self.state.center[1]
+        #         self.state.center = center
+        #
+        # elif center[1] != None:
+        #     #only goes here if center[0] is None
+        #     center[0] = self.state.center[0]
+        #     self.state.center = center
 
 
 
 def simple_camera(camera, target_rect):
     ##borrowed function - cannot remember where - stack overflow answer i think???
+    #tracks target_rect
     l, t, _, _ = target_rect # l = left,  t = top
-    _, _, w, h = camera      # w = width, h = height
+    _, _, w, h = camera.state      # w = width, h = height
     return Rect(-l+R.HALF_WIDTH, -t+R.HALF_HEIGHT, w, h)
+
+def simple_camera_two(camera, target_rect):
+    ##borrowed function - cannot remember where - stack overflow answer i think???
+    #tracks target_rect
+    l, t, _, _ = target_rect # l = left,  t = top
+    _, _, w, h = camera.state      # w = width, h = height
+    return Rect(l, t, w, h)
 
 class TileCache:
 
@@ -216,9 +278,11 @@ class Sprite(pg.sprite.Sprite):
     def update(self, *args):
         """Run the current animation."""
         for arg in args:
-            if isinstance(arg, Camera):
-                cam_pos = arg.state.topleft
-                self.rect.center = self.x_y[0] + cam_pos[0], self.x_y[1] + cam_pos[1]
+            # if isinstance(arg, Camera):
+            #     cam_pos = arg.state.center
+            #     self.rect.center = self.x_y[0] + cam_pos[0], self.x_y[1] + cam_pos[1]
+            if isinstance(arg, tuple):
+                self.rect.center = self.x_y[0] + arg[0], self.x_y[1] + arg[1]
 
         if self.animation != None:
             self.animation.next()
@@ -231,9 +295,12 @@ class ParallaxSprite(Sprite):
 
     def update(self, *args):
         for arg in args:
-            if isinstance(arg, Camera):
-                cam_pos = arg.state.topleft
-                self.rect.center = self.x_y[0] + cam_pos[0] * self.offset, self.x_y[1] + cam_pos[1] * self.offset
+            # if isinstance(arg, Camera):
+            #     cam_pos = arg.state.center
+            #     self.rect.center = self.x_y[0] + cam_pos[0] * self.offset, self.x_y[1] + cam_pos[1] * self.offset
+            if isinstance(arg, tuple):
+                self.rect.center = self.x_y[0] + arg[0] * self.offset, self.x_y[1] + arg[1] * self.offset
+
 
         if self.animation != None:
             self.animation.next()

@@ -77,6 +77,7 @@ class NotableObject(Sprite):
         self.y = y
         self.w = w # size of this "map" when zoomed to that level.
         self.h = h
+        self.dimensions = Rect(x,y,w,h)
         self.name = "default"
         self.sprites = SortedUpdates()
         self.objects = []
@@ -132,9 +133,10 @@ class NotableObject(Sprite):
         for object in self.objects:
             connections = []
             for connection in object.connections.values():
-                connections.append(connection)
+                connections.append(connection[1])
 
-            self.graph.add_connection(str(object.location), connections)
+            if len(connections) > 0:
+                self.graph.add_connection(object.location, connections)
 
 class AsteroidField(NotableObject):
     def __init__(self, sector, (x, y), (w, h), tile_width=24, group=None):
@@ -187,7 +189,7 @@ class SolarSystem(NotableObject):
                 pg.draw.circle(self.bg.image, (200,200,100), (w/2, h/2), int(find_length(planet.x_y, star.x_y)), 2)
                 # self.tiles[planet.x/self.tile_width][planet.y/self.tile_width] = planet
 
-        # self.create_connections()
+        self.create_connections()
 
 
     def add_object(self, object):
@@ -222,6 +224,11 @@ class SolarSystem(NotableObject):
         return x, y
 
     def check_planet_distances(self, (x,y), distance=8):
+        """
+        check that planets are a at least :param: distance away.
+        :param distance:
+        :return: whether the location is distant enough away.
+        """
         if x == -1:
             return False
         for other_object in self.objects:
@@ -234,11 +241,42 @@ class SolarSystem(NotableObject):
 
     def add_connection(self, object, other_object):
         object.connections[other_object.name] = ((object.x, object.y), (other_object.x, other_object.y))
-        midpoint = (max(object.x, other_object.x) - abs(object.x - other_object.x)/3, max(object.y, other_object.y) - abs(object.y - other_object.y)/3)
-        self.connections[object.name + other_object.name] = ((object.x, object.y), midpoint, (other_object.x, other_object.y))
+        # midpoint = (max(object.x, other_object.x) - abs(object.x - other_object.x)/3, max(object.y, other_object.y) - abs(object.y - other_object.y)/3)
+        self.connections[object.name + other_object.name] = ((object.x, object.y), (other_object.x, other_object.y))
         return True
 
 
+    # def add_connection(self, object, other_object):
+    #     object.connections[other_object.name] = ((object.x, object.y), (other_object.x, other_object.y))
+    #
+    #     x_dev = rand.randint(-abs(object.x - other_object.x), abs(object.x - other_object.x)) #deviation in the x for midpoint
+    #     y_dev = rand.randint(-abs(object.y - other_object.y), abs(object.y - other_object.y)) #same for y
+    #     midpoint = (max(object.x, other_object.x) - x_dev, max(object.y, other_object.y) - y_dev)
+    #
+    #     self.connections[object.name + other_object.name] = ((object.x, object.y), midpoint, (other_object.x, other_object.y))
+    #
+    #     return True
+
+    def get_connections(self, connection, camera):
+        offset = camera.state.topleft
+        new_connections = []
+        for pair in connection:
+            new_connections.append((pair[0] + offset[0], pair[1] + offset[1]))
+
+        return new_connections
+
+    def create_connections(self):
+        for poi in self.objects:
+            connected = False
+            while not connected and poi != self.star :
+                # num = rand.randint(0,9) #inclusive of upper limit.
+                # connection = "city" + str(num)
+                other_poi = rand.choice(self.objects)
+                # other_city = self.cities_dict[connection]
+                if other_poi != self.star and other_poi.name != poi.name and not ( self.connections.has_key(poi.name + other_poi.name) or self.connections.has_key(other_poi.name + poi.name)):
+                    connected = self.add_connection(poi, other_poi)
+                else:
+                    break
 
 ALL_POI = [SolarSystem, AsteroidField]
 class Sector:
@@ -256,7 +294,7 @@ class Sector:
         self.connections = {}
         self.points_of_interest = []
         self.sprites = SortedUpdates()
-        self.rect = None
+        self.dimensions = None
         self.parent = None
         self.zoom = "sector"
 
@@ -264,7 +302,7 @@ class Sector:
             x,y = self.find_place()
             while x == False:
                 x,y = self.find_place()
-            poi = rand.choice(ALL_POI)(self, (x, y), (512, 512))
+            poi = rand.choice(ALL_POI)(self, (x, y), (256, 256))
             poi.parent = self
             poi.name = poi.__class__.__name__.capitalize() + str(i)
             self.add_poi(poi)
@@ -279,20 +317,30 @@ class Sector:
 
     def add_connection(self, object, other_object):
         object.connections[other_object.name] = ((object.x, object.y), (other_object.x, other_object.y))
-
-        x_dev = rand.randint(-abs(object.x - other_object.x), abs(object.x - other_object.x)) #deviation in the x for midpoint
-        y_dev = rand.randint(-abs(object.y - other_object.y), abs(object.y - other_object.y)) #same for y
-        midpoint = (max(object.x, other_object.x) - x_dev, max(object.y, other_object.y) - y_dev)
-
-        self.connections[object.name + other_object.name] = ((object.x, object.y), midpoint, (other_object.x, other_object.y))
+        #no longer puts midpoint in here
+        self.connections[object.name + other_object.name] = ((object.x, object.y), (other_object.x, other_object.y))
 
         return True
 
-    def get_connections(self, connection, camera):
-        offset = camera.state.topleft
+    def get_points_from_connections(self, pos):
         new_connections = []
-        for pair in connection:
-            new_connections.append((pair[0] + offset[0], pair[1] + offset[1]))
+        for pair in self.connections.values():
+
+            object = pair[0]
+            other_object = pair[1]
+
+            x_dev = -abs(object[0] - other_object[0]) #/ coef + abs(object[0] - other_object[0]) * coef #deviation in the x for midpoint
+            y_dev = abs(object[1] - other_object[1])  #same for y
+            # y_dev = -abs(object[1] - other_object[1]) / coef + abs(object[1] - other_object[1]) * coef #same for y
+            # y_dev = rand.randint(-abs(object[1] - other_object[1]), abs(object[1] - other_object[1])) #same for y
+
+
+            #adds in a deviation to make a pretty curve for line drawings
+            midpoint = (max(object[0], other_object[0]) - x_dev, max(object[1], other_object[1]) - y_dev)
+
+            new_connections.append(((object[0] + pos[0], object[1] + pos[1]),
+                                   (midpoint[0] + pos[0], midpoint[1] + pos[1]),
+                                   (other_object[0] + pos[0], other_object[1] + pos[1])))
 
         return new_connections
 
@@ -356,8 +404,14 @@ class Sector:
         return None
 
     def make_graph(self):
+        self.graph = ai.SolarGraph((self.x,self.y))
         for point in self.points_of_interest:
             point.make_graph()
+            node = ai.Node(point.name, point.location, 10, True, point.graph)
+            self.graph.add_edge(node)
+
+        for connection in self.connections.values():
+            self.graph.add_connection(connection[0], [connection[1]] )
 
 
 
@@ -372,29 +426,32 @@ class Galaxy:
         self.zoom = "galaxy"
 
         # self.sprites = SortedUpdates()
+        self.w = 0
+        self.h = 0
 
-
-        for i in range(2):
+        for x in range(2):
             self.sectors.append([])
-            for j in range(2):
-                sector, rect = self.create_sector(i, j)
+            for y in range(2):
+                sector, rect = self.create_sector(x, y)
                 sector.parent = self
-                self.sectors[i].append(sector)
+
+                self.sectors[x].append(sector)
                 self.sector_rects[sector] = rect
                 self.rects_sectors[rect.topleft] = sector # Rect is not a hashable object so done it to the topleft tuple instead
-
+                self.w += sector.w
+                self.h += sector.h
 
         self.active_sector = self.sectors[0][0]
 
 
-    def create_sector(self, x, y, sector_size=1024):
+    def create_sector(self, x, y, sector_size=512):
         sector = Sector(x,y,sector_size)
         rect = Rect(x*sector_size, y * sector_size, sector_size, sector_size)
-        sector.rect = rect
+        sector.dimensions = rect
         #other stuff...
         return sector, rect
 
-    def check_mouse_pos(self,mouse_pos, camera_pos):
+    def check_mouse_pos(self, mouse_pos, camera_pos):
         x = mouse_pos[0] - camera_pos[0]
         y = mouse_pos[1] - camera_pos[1]
 
