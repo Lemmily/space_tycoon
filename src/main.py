@@ -217,7 +217,7 @@ class Game():
                     self.selected = None
 
                 if self.selected != None:
-                    print "picked object: " + self.selected.name + "  ", self.selected.x_y, "\tmouse coords:", x, y, "\tcam_pos:", self.camera.state.topleft
+                    print "picked object: " + self.selected.name + "  ", self.selected.x_y, "\tmouse coords:", x, y, "\tcam_pos:", self.camera.state.center
                     if self.selector != None:
                         # self.selected.rect.center = self.picked.sprite.rect.center
                         self.selector.x_y = (self.selected.x_y[0], self.selected.x_y[1])

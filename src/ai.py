@@ -184,45 +184,45 @@ def heuristic(a, b):
    return abs(x1 - x2) + abs(y1 - y2)
 
 #
-# graph = Graph()
-#
-# a = Node("A", (10,10), 10)
-# graph.add_edge(a, [(30,15),(0,60)])
-# graph.add_edge(Node("B", (30,15), 100), [(15,70),(30,60)])
-# graph.add_edge(Node("C", (30,60), 15), [(10,10)])
-# graph.add_edge(Node("D", (15,70), 10), [(30,60)])
-# graph.add_edge(Node("E", (0,60), 15), [(30,15), (15,70)])
-# graph.add_edge(Node("F", (100,100), 15), [])
-#
-# pather = PathFinder()
-#
-# start = (10,10)
-# goal = (0,60)
-# print start, goal
-# a,b = pather.dijkstra_search(graph, start, goal)
-# c,d = pather.a_star(graph, start, goal)
-# path = pather.reconstruct_path(a,start, goal)
-# print "djikstra", path, b[goal]
-# path = pather.reconstruct_path(c,start, goal)
-# print "a_star", path, d[goal]
-#
-#
-# start = (50,10)
-# goal = (100,100)
-# print start, goal
-# a,b = pather.dijkstra_search(graph, start, goal)
-# c,d = pather.a_star(graph, start, goal)
-# path = pather.reconstruct_path(a,start, goal)
-# print "djikstra", path, b[goal]
-# path = pather.reconstruct_path(c,start, goal)
-# print "a_star", path, d[goal]
-#
-# start = (30,15)
-# goal = (10,10)
-# print start, goal
-# a,b = pather.dijkstra_search(graph, start, goal)
-# c,d = pather.a_star(graph, start, goal)
-# path = pather.reconstruct_path(a,start, goal)
-# print "djikstra", path, b[goal]
-# path = pather.reconstruct_path(c,start, goal)
-# print "a_star", path, d[goal]
+graph = Graph()
+
+a = Node("A", (10,10), 10)
+graph.add_edge(a, [(30,15),(0,60)])
+graph.add_edge(Node("B", (30,15), 100), [(15,70),(30,60)])
+graph.add_edge(Node("C", (30,60), 15), [(10,10)])
+graph.add_edge(Node("D", (15,70), 10), [(30,60)])
+graph.add_edge(Node("E", (0,60), 15), [(30,15), (15,70)])
+graph.add_edge(Node("F", (100,100), 15), [])
+
+pather = PathFinder()
+
+start = (10,10)
+goal = (0,60)
+print start, goal
+a,b = pather.dijkstra_search(graph, start, goal)
+c,d = pather.a_star(graph, start, goal)
+path = pather.reconstruct_path(a,start, goal)
+print "djikstra", path, b[goal]
+path = pather.reconstruct_path(c,start, goal)
+print "a_star", path, d[goal]
+
+
+start = (50,10)
+goal = (100,100)
+print start, goal
+a,b = pather.dijkstra_search(graph, start, goal)
+c,d = pather.a_star(graph, start, goal)
+path = pather.reconstruct_path(a,start, goal)
+print "djikstra", path, b[goal]
+path = pather.reconstruct_path(c,start, goal)
+print "a_star", path, d[goal]
+
+start = (30,15)
+goal = (10,10)
+print start, goal
+a,b = pather.dijkstra_search(graph, start, goal)
+c,d = pather.a_star(graph, start, goal)
+path = pather.reconstruct_path(a,start, goal)
+print "djikstra", path, b[goal]
+path = pather.reconstruct_path(c,start, goal)
+print "a_star", path, d[goal]

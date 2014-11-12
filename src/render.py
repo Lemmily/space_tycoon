@@ -36,11 +36,11 @@ class Camera:
                 self.state.right = self.state.w/2 + layer.w/2
 
         ##if the map is taller than the screen
-        if layer.w > self.state.w:
-            if self.state.top > layer.h - self.state.h/2 :
-                self.state.top = layer.h - self.state.h/2
-            elif self.state.bottom < -layer.h/2 + self.state.h/2:
-                self.state.bottom = -layer.h/2 + self.state.h/2
+        if layer.h > self.state.h:
+            if self.state.top > layer.h + self.state.h/2 :
+                self.state.top = layer.h + self.state.h/2
+            elif self.state.bottom < layer.h/2 - self.state.h/2:
+                self.state.bottom = layer.h/2 - self.state.h/2
         else:
             if self.state.top > self.state.h/2 - layer.h/2:
                 self.state.top = self.state.h/2 - layer.h/2
