@@ -47,7 +47,7 @@ class Camera:
             elif self.state.bottom < self.state.h/2 + layer.h/2:
                 self.state.bottom = self.state.h/2 + layer.h/2
 
-
+        #TODO: guard against the oscillating between -not attractive!
 
         # if layer.h > self.state.h:
         #     if self.state.center[1] > layer.h/2:

@@ -81,7 +81,7 @@ class Game():
     def render(self, pos,  dt):
         dirties = []
         # if self.zoom == "galaxy":
-        if self.zoom == "solar" or "sector":
+        if self.zoom == "solar" or self.zoom == "sector":
             self.layer.sprites.clear(self.screen, self.background)
             if self.zoom == "sector":
                 for points in self.layer.get_points_from_connections(pos):
@@ -303,7 +303,7 @@ class Game():
 if __name__ == "__main__":
     R.TILE_CACHE = TileCache(24, 24)
     pg.init()
-    pg.display.set_mode((1440, 768))
+    pg.display.set_mode((R.WINDOW_WIDTH, R.WINDOW_HEIGHT))
     pg.display.set_caption('space trader tycoon')
 
     # gamefont =

@@ -170,6 +170,7 @@ class SolarSystem(NotableObject):
         self.bg.image = pg.Surface((w,h))
         self.bg.rect = self.image.get_rect()
         self.bg.rect.center = center
+        self.bg.image.fill((50,0,0))
         self.sprites.add(self.bg)
         self.star = star = Star("star" + str( sector.x) + str(sector.y), w/2, h/2)
         self.sprites.add(star)
@@ -280,7 +281,7 @@ class SolarSystem(NotableObject):
 
 ALL_POI = [SolarSystem, AsteroidField]
 class Sector:
-    def __init__(self, x ,y, w, h=None):
+    def __init__(self, x ,y, w, h=None, name="sector"):
         """
 
         :param x: sector x coordinate
@@ -296,13 +297,14 @@ class Sector:
         self.sprites = SortedUpdates()
         self.dimensions = None
         self.parent = None
+        self.name = name
         self.zoom = "sector"
 
         for i in range(rand.randint(3, 9)):
             x,y = self.find_place()
             while x == False:
                 x,y = self.find_place()
-            poi = rand.choice(ALL_POI)(self, (x, y), (256, 256))
+            poi = rand.choice(ALL_POI)(self, (x, y), (512, 512))
             poi.parent = self
             poi.name = poi.__class__.__name__.capitalize() + str(i)
             self.add_poi(poi)
@@ -441,10 +443,12 @@ class Galaxy:
                 self.w += sector.w
                 self.h += sector.h
 
-        self.active_sector = self.sectors[0][0]
+        self.dimensions = Rect(0,0, self.w, self.h)
+
+        self.active_sector = self.sectors[0][0] #set to first for now.
 
 
-    def create_sector(self, x, y, sector_size=512):
+    def create_sector(self, x, y, sector_size=1024):
         sector = Sector(x,y,sector_size)
         rect = Rect(x*sector_size, y * sector_size, sector_size, sector_size)
         sector.dimensions = rect
