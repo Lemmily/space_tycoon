@@ -1,4 +1,3 @@
-
 from random import Random
 from sets import Set
 
@@ -9,8 +8,9 @@ import xml.etree.ElementTree as ET
 
 rand = Random()
 
-#TODO: MAJOR: write in to allow for a building to be assigned a "Job".
-#This will allow the factory to be set to a specific production and allow the player to reassign it.
+
+# TODO: MAJOR: write in to allow for a building to be assigned a "Job".
+# This will allow the factory to be set to a specific production and allow the player to reassign it.
 
 
 # class Job:
@@ -22,28 +22,30 @@ rand = Random()
 
 class Resource:
     def __init__(self, name, location, needs=None, byproducts=None, output=1.0, time=1.0, type=None):
-        self.name = name # or type or w/e like "iron ore"
-        self.location = location # type of building resource is made/gathered in eg, mine/furnace/factory
-        self.type = type # flavour of building, mine ~~> quarry, pump jack, sifting station, blah blah
+        self.name = name  # or type or w/e like "iron ore"
+        self.location = location  # type of building resource is made/gathered in eg, mine/furnace/factory
+        self.type = type  # flavour of building, mine ~~> quarry, pump jack, sifting station, blah blah
 
-        if not needs: needs = {}
-        self.needs = needs #what's needed to make one unit of this? {Resource: number, Resource: number}
-        if not byproducts: byproducts = {}  ### {Resource: (output, chance), Resource: (output, chance)}
-        self.byproducts = byproducts #type and quantity of by products produced when a unit of this resource is created.
+        if not needs:
+            needs = {}
+        self.needs = needs  # what's needed to make one unit of this? {Resource: number, Resource: number}
+        if not byproducts:
+            byproducts = {}  # ## {Resource: (output, chance), Resource: (output, chance)}
+        self.byproducts = byproducts  # type & quantity of by products produced when a unit of this resource is created.
         self.time = time
         self.output = output
 
     def produce_byproducts(self):
-        if self.byproducts != None:
-            byproducts=[]
+        if self.byproducts is not None:
+            byproducts = []
             for resource in self.byproducts:
                 pass
 
-
             return byproducts
 
+
 class Building:
-    def __init__(self, resource, depot, rate=0.5):
+    def __init__(self, resource, depot, rate=0.5, type=None):
         """
 
         :param resource:
@@ -51,30 +53,32 @@ class Building:
         :param rate: production rate for the building.
         :return:
         """
-        self.depot = depot # the station where this resource is sent to.
-        self.resource = resource # resource produced
-        self.source = None # the resource source, eg planet/asteroid/depot/etc #TODO: Implement. (tie to planet resources)
+        self.depot = depot  # the station where this resource is sent to.
+        self.resource = resource  # resource produced
+
+        # #TODO: Implement sources. (tie to planet resources deposits)
+        self.source = None  # the resource source, eg planet/asteroid/depot/etc
         # self.needs = resource.needs #what resources and how much of it need to produce one resource unit.
-        self.base_rate = rate #  # the rate per second at which the resource is mined/produced.
-        self.rate = self.base_rate# the rate at which the resource is mined plus any modifiers/
+        self.base_rate = rate  # # the rate per second at which the resource is mined/produced.
+        self.rate = self.base_rate  # the rate at which the resource is mined plus any modifiers/
         self.units = 0.0
 
-        #flavour, changes the name of the building A mine class type could be quarry, mine, pump jack. sift station, etc
-        if type != None:
+        # flavour, changes the name of the building; mine class type could be quarry, mine, pump jack. sift station, etc
+        if type is not None:
             self.type = type
         else:
             self.type = self.__class__.__name__.lower()
 
-        if self.resource.needs != None:
-            self.input_storage = {res.name:0 for res in self.resource.needs.keys()} #setup storage for incoming resources.
-
+        if self.resource.needs is not None:
+            self.input_storage = {res.name: 0 for res in
+                                  self.resource.needs.keys()}  # setup storage for incoming resources.
 
         self.storage = {resource.name: 0}
-        if resource.byproducts != None:
+        if resource.byproducts is not None:
             for item in resource.byproducts:
                 self.storage[item.name] = 0
 
-        #register with the depot
+        # register with the depot
         self.depot.register(self)
 
     def update(self, dt):
@@ -90,11 +94,10 @@ class Building:
         for resource in resources.keys():
             self.input_storage[resource] += resources[resource]
 
-
     def make_request(self):
         resources = []
         for resource in self.resource.needs.keys():
-            if self.input_storage[resource.name] < 5: #TODO: make the number changeable.
+            if self.input_storage[resource.name] < 5:  # TODO: make the number changeable.
                 resources.append(resource)
 
         self.depot.request(self, resources)
@@ -110,27 +113,26 @@ class Building:
         self.units += self.rate * dt
         if self.units >= self.resource.time:
             for resource in self.resource.needs.keys():
-                self.input_storage[resource.name] -= self.resource.needs[resource] #st instead of int
+                self.input_storage[resource.name] -= self.resource.needs[resource]  # st instead of int
 
             self.storage[self.resource.name] += self.resource.output
             self.units = 0.0
 
 
 class Mine(Building):
-    def __init__(self, resource,  depot, rate=0.5, type="mine"):
-        Building.__init__(self, resource, depot, rate)
+    def __init__(self, resource, depot, rate=0.5, type="mine"):
+        Building.__init__(self, resource, depot, rate, type)
 
     def update(self, dt):
-        #work out how much resource produced.
-        #TODO: will need to know how much resource is left at the source.
-        #make some resource
+        # work out how much resource produced.
+        # TODO: will need to know how much resource is left at the source.
+        # make some resource
 
         self.produce(dt)
         # print self.units, "units of ", self.resource.name, " and ", self.storage[self.resource.name], " units stored"
-            #once resource is multiple of x forward to depot? or depot periodically collects from storage.
+        # once resource is multiple of x forward to depot? or depot periodically collects from storage.
 
         # pass
-
 
 
 class Furnace(Building):
@@ -139,38 +141,34 @@ class Furnace(Building):
 
     def update(self, dt):
         if self.all_resources_present():
-            #smelt
+            # smelt
             self.produce(dt)
             # print self.units, "units of ", self.resource.name, " and ", self.storage[self.resource.name], " units stored"
         else:
             self.make_request()
 
 
-
-
-
-
-class Factory:
+class Factory(Building):
     def __init__(self, resource, depot, rate=0.25):
         Building.__init__(self, resource, depot, rate)
 
-
     def update(self, dt):
         if self.all_resources_present():
-            #smelt
+            # smelt
             self.produce(dt)
-            print self.units, "units of ", self.resource.name, " and ", self.storage[self.resource.name], " units stored"
+            print self.units, "units of ", self.resource.name, " and ", self.storage[
+                self.resource.name], " units stored"
         else:
             self.make_request()
 
-    # def produce(self, dt):
-    #     self.units += self.rate * dt
-    #     if self.units >= self.resource.time:
-    #         for resource in self.resource.needs.keys():
-    #             self.input_storage[resource.name] -= self.resource.needs[resource]
-    #
-    #         self.storage[self.resource.name] += self.resource.output
-    #         self.units = 0.0
+            # def produce(self, dt):
+            #     self.units += self.rate * dt
+            #     if self.units >= self.resource.time:
+            #         for resource in self.resource.needs.keys():
+            #             self.input_storage[resource.name] -= self.resource.needs[resource]
+            #
+            #         self.storage[self.resource.name] += self.resource.output
+            #         self.units = 0.0
 
 
 class Depot:
@@ -198,18 +196,18 @@ class Depot:
         if building not in self.buildings:
             self.buildings.add(building)
             for key in building.storage.keys():
-                if not self.storage.has_key(key):
+                if not (key in self.storage):
                     self.storage[key] = 0
 
-            if not self.producers.has_key(building.resource.name):
+            if not (building.resource.name in self.producers):
                 self.producers[building.resource.name] = 1
             else:
                 self.producers[building.resource.name] += 1
 
     def request(self, building, specifics=None):
 
-        if not self.requests.has_key(building):
-            if specifics == None:
+        if not (building in self.requests):
+            if specifics is None:
                 self.requests[building] = building.needs
             else:
                 self.requests[building] = specifics
@@ -219,7 +217,7 @@ class Depot:
                     self.requests_by_type[resource.name] = []
 
                 self.requests_by_type[resource.name].append(building)
-        #TODO: make possibly to amend requests
+                # TODO: make possibly to amend requests
 
     def remove_request(self, building):
         # if not self.requests.has_key(building):
@@ -228,16 +226,16 @@ class Depot:
         self.requests.pop(building)
 
     def fulfil_requests(self):
-        #TODO: make priority in buildings. iron furnace higher over copper one for example.
-        #TODO: make it possible to divide the resources differently, eg via priority.
+        # TODO: make priority in buildings. iron furnace higher over copper one for example.
+        # TODO: make it possible to divide the resources differently, eg via priority.
         resource_division = {}
         for key in self.requests_by_type.keys():
             if len(self.requests_by_type[key]) > 0:
                 if not self.producers.has_key(key):
                     self.send_request(key)
-                requests =len(self.requests_by_type[key])
+                requests = len(self.requests_by_type[key])
                 per_request = int(self.storage[key]) / requests
-                leftover =  self.storage[key] % requests
+                leftover = self.storage[key] % requests
                 resource_division[key] = [per_request, leftover]
         for requester in self.requests.keys():
             delivery = {}
@@ -249,25 +247,22 @@ class Depot:
                 self.remove_request(requester)
 
 
-
 class IndustryManager:
     """ temporary testing for industry stuffs
     """
+
     def __init__(self):
         global processed_resources, raw_resources
 
-
         self.ticks = 0
         self.buildings = []
-        self.building_by_type = {"mine":[], "furnace": [], "factory": []}
+        self.building_by_type = {"mine": [], "furnace": [], "factory": []}
         self.depots = [self.create_depot_with_buildings()]
-
-
 
     def create_depot_with_buildings(self):
         depot = Depot()
         for i in range(7):
-            rate = 0.75 + float(rand.randint(-10,10)/100.0)
+            rate = 0.75 + float(rand.randint(-10, 10) / 100.0)
 
             if i < 3:
                 resource = resource_dict["fuel"]
@@ -276,7 +271,7 @@ class IndustryManager:
             else:
                 resource = resource_dict["iron ore"]
 
-            building = Mine(resource , depot, rate=rate)
+            building = Mine(resource, depot, rate=rate)
             self.buildings.append(building)
             self.building_by_type["mine"].append(building)
 
@@ -286,13 +281,13 @@ class IndustryManager:
             else:
                 resource = resource_dict["copper plate"]
 
-            rate = 0.5 + float(rand.randint(-10,10)/100.0)
-            building =  Furnace(resource, depot, rate=rate)
+            rate = 0.5 + float(rand.randint(-10, 10) / 100.0)
+            building = Furnace(resource, depot, rate=rate)
             self.buildings.append(building)
             self.building_by_type["furnace"].append(building)
 
         for i in range(3):
-            rate = 0.25 + float(rand.randint(-10,10)/100.0)
+            rate = 0.25 + float(rand.randint(-10, 10) / 100.0)
             if i <= 1:
                 resource = resource_dict["copper wire"]
             else:
@@ -302,7 +297,6 @@ class IndustryManager:
             self.building_by_type["factory"].append(building)
 
         return depot
-
 
     def update(self, dt):
         for building in self.building_by_type["mine"]:
@@ -314,7 +308,7 @@ class IndustryManager:
 
         self.ticks += 1
         if self.ticks > 30:
-            #only do fetches from buildings every 30 ticks or so
+            # only do fetches from buildings every 30 ticks or so
             for depot in self.depots:
                 depot.update(dt)
             self.ticks -= 30
@@ -331,11 +325,12 @@ def main():
 
     industry_manager = IndustryManager()
     while not game_over:
-        dt = 1/float(clock.tick(30))
+        dt = 1 / float(clock.tick(30))
 
         industry_manager.update(dt)
 
         handle_events()
+
 
 def handle_events():
     global game_over
@@ -344,9 +339,11 @@ def handle_events():
         if event.type == pg.QUIT:
             game_over = True
 
+
 raw_resources = []
 processed_resources = []
-resource_dict = {} # lookup by name.
+resource_dict = {}  # lookup by name.
+
 
 def construct_resources_tables():
     global raw_resources, processed_resources, resource_dict
@@ -358,7 +355,7 @@ def construct_resources_tables():
     t_processed_resources = []
 
     for res in root.findall("raw"):
-        #do raw things
+        # do raw things
         name = res.attrib["name"]
         location = res.find("location").text
         if len(res.find("location").attrib) > 0:
@@ -375,7 +372,7 @@ def construct_resources_tables():
 
     # Now do the processed ones, these take a bit more work.
     for res in root.findall("processed"):
-        #do raw things
+        # do raw things
         name = res.attrib["name"]
         location = res.find("location").text
         if len(res.find("location").attrib) > 0:
@@ -391,7 +388,7 @@ def construct_resources_tables():
             chance = float(byproduct.attrib["chance"])
             byproducts.append((type_res, amount, chance))
         needs = []
-        #sort out the needs, will need to hook up the correct resource object later.
+        # sort out the needs, will need to hook up the correct resource object later.
         for need in res.findall("need"):
             type_res = need.attrib["type"]
             amount = float(need.attrib["amount"])
@@ -407,7 +404,7 @@ def construct_resources_tables():
         res = entry[0]
         needs = entry[1]
         byproducts = entry[2]
-        entry=None
+        entry = None
 
         if len(needs) > 0:
             final_needs = {}
@@ -438,5 +435,3 @@ construct_resources_tables()
 game_over = False
 
 main()
-
-

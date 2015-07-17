@@ -1,20 +1,18 @@
-import math
-from pygame.constants import MOUSEMOTION, MOUSEBUTTONDOWN, MOUSEBUTTONUP
-from pygame.rect import Rect
 from pygame.sprite import RenderUpdates
-from src import R
-from src.map import SolarSystem, Galaxy
-from src.render import Sprite, SortedUpdates, SortedUpdatesCamera, ParallaxSprite, TileCache, Camera, simple_camera, \
-    simple_camera_two
-from src.ship import Ship
 
+from pygame.constants import MOUSEMOTION, MOUSEBUTTONDOWN, MOUSEBUTTONUP
+
+from pygame.rect import Rect
 import pygame.gfxdraw as gfxdraw
+
+from src import R
+from src.map import Galaxy
+from src.render import Sprite, SortedUpdates, TileCache, Camera, simple_camera_two
+from src.ship import Ship
 
 __author__ = 'Emily'
 
 import pygame as pg
-
-from vec2d import  *
 
 
 class Game():
@@ -27,35 +25,32 @@ class Game():
         self.ui_background_right = pg.Surface((R.UI_LEFTBAR, R.WINDOW_HEIGHT))
         self.ui_background_right.fill((0, 0, 0))
 
-        self.ui_background_bottom =  pg.Surface((R.WINDOW_WIDTH, R.UI_BOTTOMBAR))
+        self.ui_background_bottom = pg.Surface((R.WINDOW_WIDTH, R.UI_BOTTOMBAR))
         self.ui_background_bottom.fill((0, 0, 0))
 
         self.ui_background = pg.Surface((R.WINDOW_WIDTH, R.WINDOW_HEIGHT))
-        self.ui_background.fill((100,200,100))
-        self.ui_background.set_colorkey((100,200,100))
+        self.ui_background.fill((100, 200, 100))
+        self.ui_background.set_colorkey((100, 200, 100))
 
-        self.ui_background.blit(self.ui_background_bottom, (0,R.UI_DOWN))
-        self.ui_background.blit(self.ui_background_right, (R.UI_LEFT,0))
+        self.ui_background.blit(self.ui_background_bottom, (0, R.UI_DOWN))
+        self.ui_background.blit(self.ui_background_right, (R.UI_LEFT, 0))
 
         self.camera = Camera(simple_camera_two, R.MAP_WINDOW_WIDTH, R.MAP_WINDOW_HEIGHT)
         self.sprites = SortedUpdates()
         self.ui_overlay = RenderUpdates()
 
-
-
-
-        self.galaxy = Galaxy()#1024,768,R.tile_size, group=self.sprites)
+        self.galaxy = Galaxy()  # 1024,768,R.tile_size, group=self.sprites)
         print "finished generating"
         self.layer = self.galaxy.active_sector
-        self.zoom = "sector" # galaxy, sector, solar system, planet
+        self.zoom = "sector"  # galaxy, sector, solar system, planet
         self.selected = None
-        self.selector = None #Sprite((-10, -10), R.TILE_CACHE["data/selection_anim.png"])
+        self.selector = None  # Sprite((-10, -10), R.TILE_CACHE["data/selection_anim.png"])
 
         # self.camera.state.topleft = (0,0)#self.camera.camera_func(self.camera, self.layer.dimensions).center
 
         # self.camera.state.center = self.layer.dimensions.center
 
-        ##test sprites.
+        # #test sprites.
         thing3 = Sprite((200, 200), R.TILE_CACHE["data/planet_1.png"], scaling=2, ticks=8, depth=2)
         thing4 = Sprite((500, 350), R.TILE_CACHE["data/planet_1.png"], scaling=2, ticks=8, depth=2, row=1)
         # thing = Sprite((100, 100), R.TILE_CACHE["data/planet_1.png"], scaling=3, ticks=4)
@@ -78,16 +73,16 @@ class Game():
         # self.cam_pos = Rect(0,0,R.MAP_WINDOW_WIDTH, R.MAP_WINDOW_HEIGHT)
         self.drag = False
 
-    def render(self, pos,  dt):
+    def render(self, pos, dt):
         dirties = []
         # if self.zoom == "galaxy":
         if self.zoom == "solar" or self.zoom == "sector":
             self.layer.sprites.clear(self.screen, self.background)
             if self.zoom == "sector":
                 for points in self.layer.get_points_from_connections(pos):
-                    gfxdraw.bezier(self.screen, points, 10, (255,0,0))
+                    gfxdraw.bezier(self.screen, points, 10, (255, 0, 0))
             # pos = self.camera.state.centerx - self.layer.dimensions.w /2, self.camera.state.centery - self.layer.dimensions.h /2
-            self.layer.sprites.update(pos, dt) #self.camera,
+            self.layer.sprites.update(pos, dt)  # self.camera,
             dirties.append(self.layer.sprites.draw(self.screen))
         else:
             self.sprites.clear(self.screen, self.background)
@@ -97,20 +92,17 @@ class Game():
         self.ui_overlay.update(pos, dt)
         return dirties
 
-
     def main(self):
         clock = pg.time.Clock()
         self.screen.blit(self.background, (0, 0))
         pg.display.flip()
 
         while not self.game_over:
-            dt = 1/float(clock.tick(30))
+            dt = 1 / float(clock.tick(30))
 
             ###temp
-            self.screen.blit(self.background, (0,0))
+            self.screen.blit(self.background, (0, 0))
             ####
-
-
 
             self.controls()
 
@@ -118,11 +110,10 @@ class Game():
             #                     self.layer.dimensions[2], self.layer.dimensions[3])
             # pg.draw.rect(self.screen, (60,60,30,20), rect)
 
+            pg.draw.rect(self.screen, (30, 30, 30, 50),
+                         Rect(self.camera.state.centerx, self.camera.state.centery, 48, 48))
 
-
-            pg.draw.rect(self.screen, (30,30,30,50), Rect(self.camera.state.centerx, self.camera.state.centery, 48, 48))
-
-            pos = self.camera.state.centerx - self.layer.dimensions.w /2, self.camera.state.centery - self.layer.dimensions.h /2
+            pos = self.camera.state.centerx - self.layer.dimensions.w / 2, self.camera.state.centery - self.layer.dimensions.h / 2
             dirties = self.render(pos, dt)
 
             # self.sprites.clear(self.screen, self.background)
@@ -162,13 +153,13 @@ class Game():
         # keys = pg.key.get_pressed()
 
         def pressed(key):
-            return self.pressed_key == key  #or keys[key]
+            return self.pressed_key == key  # or keys[key]
 
         def m_pressed(mouse):
             return self.mouse_pressed == mouse
 
         if pressed(pg.K_d):
-            self.camera.state.topleft = (0,0)
+            self.camera.state.topleft = (0, 0)
             self.pressed_key = None
 
         if pressed(pg.K_x):
@@ -177,13 +168,12 @@ class Game():
             self.pressed_key = None
 
         if pressed(pg.K_z):
-            if self.layer.parent != None:
+            if self.layer.parent is not None:
                 self.switch_zoom(self.layer.parent.zoom, self.layer.parent)
             self.pressed_key = None
 
-
     def update_ui(self):
-        if self.selected != None and self.selector == None:
+        if self.selected is not None and self.selector is None:
 
             if hasattr(self.selected, "sprite"):
                 sprite = self.selected.sprite
@@ -194,40 +184,39 @@ class Game():
 
             size = max(sprite.rect.w, sprite.rect.h)
 
-            self.selector.scale_to(size,size)
+            self.selector.scale_to(size, size)
             self.selector.x_y = (sprite.x_y[0], sprite.x_y[1])
             self.ui_overlay.add(self.selector)
-        elif self.selected == None and self.selector != None:
+        elif self.selected is None and self.selector is not None:
             self.selector.kill()
             self.selector = None
 
-        self.screen.blit(self.ui_background,(0,0))
-
+        self.screen.blit(self.ui_background, (0, 0))
 
     def mouse_clicked(self, (x, y), button, pos):
-        #check if inside map first?
+        # check if inside map first?
         # if button == 1:
         if 0 < x < R.UI_LEFT and 0 < y < R.UI_DOWN:
             if button == 1:
                 if self.zoom == "galaxy":
-                    self.selected = self.galaxy.check_mouse_pos((x,y), pos)
+                    self.selected = self.galaxy.check_mouse_pos((x, y), pos)
                 elif self.zoom == "solar" or "sector":
-                    self.selected = self.layer.check_mouse_pos((x,y), pos)
+                    self.selected = self.layer.check_mouse_pos((x, y), pos)
                 else:
                     self.selected = None
 
-                if self.selected != None:
+                if self.selected is not None:
                     print "picked object: " + self.selected.name + "  ", self.selected.x_y, "\tmouse coords:", x, y, "\tcam_pos:", self.camera.state.center
-                    if self.selector != None:
+                    if self.selector is not None:
                         # self.selected.rect.center = self.picked.sprite.rect.center
                         self.selector.x_y = (self.selected.x_y[0], self.selected.x_y[1])
-                            # .center = (self.picked.sprite.x_y[0] + self.camera.state.topleft[0], self.picked.sprite.x_y[1] + self.camera.state.topleft[1])
+                        # .center = (self.picked.sprite.x_y[0] + self.camera.state.topleft[0], self.picked.sprite.x_y[1] + self.camera.state.topleft[1])
                 else:
                     for sprite in self.sprites.sprites():
-                        if sprite.rect.collidepoint((x,y)):
+                        if sprite.rect.collidepoint((x, y)):
                             self.selected = sprite
         else:
-            #do menu click things here.
+            # do menu click things here.
             pass
 
     def handle_events(self, pos):
@@ -255,11 +244,11 @@ class Game():
                     self.drag = True
 
             elif event.type == MOUSEBUTTONUP:
-                if event.button == 1: #left
+                if event.button == 1:  # left
                     self.mouse_clicked(event.pos, event.button, pos)
-                if event.button == 2: #middle
+                if event.button == 2:  # middle
                     self.drag = False
-                if event.button == 3: #right
+                if event.button == 3:  # right
                     self.mouse_clicked(event.pos, event.button, pos)
 
             elif event.type == MOUSEMOTION and self.drag:  # drag the map
@@ -277,18 +266,16 @@ class Game():
                 if hasattr(event, "button"):
                     print "do something"
 
-
     def switch_zoom(self, zoom, layer):
         self.ui_overlay.clear(self.screen, self.background)
-        self.camera.state.center = self.layer.dimensions.center #self.camera.camera_func(self.camera, layer.dimensions).center
+        self.camera.state.center = self.layer.dimensions.center  # self.camera.camera_func(self.camera, layer.dimensions).center
         self.zoom = zoom
 
-        if self.selector != None:
+        if self.selector is not None:
             self.selector.kill()
             self.selector = None
 
         self.selected = None
-
 
         self.layer = layer
         # #TODO: each of these layers might hold the sprites different. make it so it displays the right ones properly.
@@ -299,13 +286,11 @@ class Game():
         #     self.sprites = layer.sprites
 
 
-
 if __name__ == "__main__":
     R.TILE_CACHE = TileCache(24, 24)
     pg.init()
     pg.display.set_mode((R.WINDOW_WIDTH, R.WINDOW_HEIGHT))
     pg.display.set_caption('space trader tycoon')
-
     # gamefont =
 
     Game().main()

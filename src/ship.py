@@ -37,7 +37,6 @@ class Ship(Sprite):
             self.path.pop()
             self.destination = self.path.peek()
 
-
     def move(self, dx, dy):
         mX = min(dx, self.destination[0] - self.x)
         mY = min(dy, self.destination[1] - self.y)
