@@ -1,10 +1,11 @@
 import copy
-from pygame.rect import Rect
 from pygame.sprite import RenderUpdates
+
+from pygame.rect import Rect
+
 from src import R
 
 __author__ = 'Emily'
-
 
 import pygame as pg
 
@@ -21,44 +22,103 @@ class Camera:
         self.state = self.camera_func(self.state, target.rect)
 
     def bound(self, layer):
+        # not entirely sure this is doing what i want it to do...
 
-        center = [None, None]
-        if self.state.center[0] > layer.w - self.state.w/2:
-            center[0] = layer.w - self.state.w/2
-        elif self.state.center[0] < 0 + self.state.w/2:
-            center[0] = self.state.w/2
+        # if the map is wider than the screen
+        if layer.w > self.state.w:
+            if self.state.right > layer.w - self.state.w / 2:
+                self.state.right = layer.w - self.state.w / 2
+            elif self.state.left < -layer.w / 2 + self.state.w / 2:
+                self.state.left = -layer.w / 2 + self.state.w / 2
+        else:
+            if self.state.left > self.state.w / 2 - layer.w / 2:
+                self.state.left = self.state.w / 2 - layer.w / 2
+            elif self.state.right < self.state.w / 2 + layer.w / 2:
+                self.state.right = self.state.w / 2 + layer.w / 2
 
-        if self.state.center[1] > layer.h - self.state.h/2:
-            center[1] = layer.h - self.state.h/2
-        elif self.state.center[1] < 0 + self.state.h/2:
-            center[1] = self.state.h/2
+        ##if the map is taller than the screen
+        if layer.h > self.state.h:
+            if self.state.top > layer.h + self.state.h / 2:
+                self.state.top = layer.h + self.state.h / 2
+            elif self.state.bottom < layer.h / 2 - self.state.h / 2:
+                self.state.bottom = layer.h / 2 - self.state.h / 2
+        else:
+            if self.state.top > self.state.h / 2 - layer.h / 2:
+                self.state.top = self.state.h / 2 - layer.h / 2
+            elif self.state.bottom < self.state.h / 2 + layer.h / 2:
+                self.state.bottom = self.state.h / 2 + layer.h / 2
 
-        if center[0] != None:
-            if center[1] != None:
-                self.state.center = center
-            else:
-                center[1] = self.state.center[1]
-                self.state.center = center
+                # TODO: guard against the oscillating between -not attractive!
 
-        elif center[1] != None:
-            center[0] = self.state.center[0]
-            self.state.center = center
+                # if layer.h > self.state.h:
+                #     if self.state.center[1] > layer.h/2:
+                #         self.state.top = layer.h/2
+                #     elif self.state.center[1] < -layer.h/2 :
+                #         center[1] = -layer.h/2
+                # else:
+                #     if self.state.center[1] > self.state.h/2 :
+                #         center[1] = self.state.h/2
+                #     elif self.state.center[1] < -self.state.h/2:
+                #         center[1] = -self.state.h/2
 
+                # if layer.w > self.state.w:
+                #     if self.state.center[0] > layer.w :
+                #         center[0] = layer.w
+                #     elif self.state.center[0] < 0 :
+                #         center[1] = self.state.center[1]
+                # else:
+                #     if self.state.center[0] < 0:
+                #         center[0] = self.state.center[0]#layer.w - self.state.w/2
+                #     elif self.state.center[0] > layer.w :
+                #         center[0] = layer.w
+                #
+                #
+                # if layer.h > self.state.h:
+                #     if self.state.center[1] > layer.h :
+                #         center[1] = layer.h
+                #     elif self.state.center[1] < 0 :
+                #         center[1] = 0
+                # else:
+                #     if self.state.center[1] < 0:
+                #         center[1] = 0#layer.w - self.state.w/2
+                #     elif self.state.center[1] > layer.h :
+                #         center[1] = layer.h
+
+                #
+                # if center[0] != None:
+                #     if center[1] != None:
+                #         self.state.center = center
+                #     else:
+                #         center[1] = self.state.center[1]
+                #         self.state.center = center
+                #
+                # elif center[1] != None:
+                #     #only goes here if center[0] is None
+                #     center[0] = self.state.center[0]
+                #     self.state.center = center
 
 
 def simple_camera(camera, target_rect):
+    # #borrowed function - cannot remember where - stack overflow answer i think???
+    # tracks target_rect
+    l, t, _, _ = target_rect  # l = left,  t = top
+    _, _, w, h = camera.state  # w = width, h = height
+    return Rect(-l + R.HALF_WIDTH, -t + R.HALF_HEIGHT, w, h)
+
+
+def simple_camera_two(camera, target_rect):
     ##borrowed function - cannot remember where - stack overflow answer i think???
-    l, t, _, _ = target_rect # l = left,  t = top
-    _, _, w, h = camera      # w = width, h = height
-    return Rect(-l+R.HALF_WIDTH, -t+R.HALF_HEIGHT, w, h)
+    # tracks target_rect
+    l, t, _, _ = target_rect  # l = left,  t = top
+    _, _, w, h = camera.state  # w = width, h = height
+    return Rect(l, t, w, h)
+
 
 class TileCache:
-
-    def __init__(self, width=R.tile_size, height=None):
+    def __init__(self, width=R.TILE_SIZE, height=None):
         self.width = width
         self.height = height or width
         self.cache = {}
-
 
     def __getitem__(self, filename, tile_width=None, tile_height=None):
         """Return a table of files, load it from disk if needed"""
@@ -80,7 +140,6 @@ class TileCache:
             self.cache[key] = tile_table
             return tile_table
 
-
     def _load_tile_table(self, filename, width, height):
         """Load an image and split it into tiles."""
         image = pg.image.load(filename).convert_alpha()
@@ -94,6 +153,7 @@ class TileCache:
                 rect = (tile_x * width, tile_y * height, width, height)
                 line.append(image.subsurface(rect))
         return tile_table
+
 
 class SortedUpdates(RenderUpdates):
     """A sprite group that sorts them by depth."""
@@ -117,11 +177,9 @@ class SortedUpdatesCamera(RenderUpdates):
         return sorted(self.spritedict.keys(), key=lambda sprite: sprite.depth)
 
 
-
-
 class Sprite(pg.sprite.Sprite):
-
-    def __init__(self, pos=(0, 0), frames=None, sprite_pos=None, scaling=2, tile_size=R.TILE_SIZE, ticks=2, depth=1, row=0):
+    def __init__(self, pos=(0, 0), frames=None, sprite_pos=None, scaling=2, tile_size=R.TILE_SIZE, ticks=2, depth=1,
+                 row=0):
         pg.sprite.Sprite.__init__(self)
 
         if frames:
@@ -133,20 +191,22 @@ class Sprite(pg.sprite.Sprite):
             #         self.frames[i].append(frame.copy())
             #         # self.frames[i].append(frames[i][j].copy())
         else:
-            self.frames = [[pg.Surface([R.TILE_SIZE, R.TILE_SIZE])]]
+            surface = pg.Surface([R.TILE_SIZE, R.TILE_SIZE])
+            surface.fill((44, 44, 44))
+            surface.set_colorkey((44, 44, 44))
+            self.frames = [[surface]]
 
-        if scaling != None:
+        if scaling is not None and frames is not None:
             for i in range(len(frames)):
                 for j in range(len(frames[i])):
                     image = frames[i][j].copy()
                     t_image = pg.transform.scale(image, (image.get_width() * scaling, image.get_height() * scaling))
                     self.frames[i][j] = t_image
                     self.orig_frames[i][j] = image
-        else:
-            self.frames = frames
+        # else:
+        #     self.frames = frames
 
-
-        if sprite_pos != None:
+        if sprite_pos is not None:
             self.image = self.frames[sprite_pos[0]][sprite_pos[1]]
             self.animation = None
         else:
@@ -162,7 +222,7 @@ class Sprite(pg.sprite.Sprite):
         # self.rect.center = self.pos
 
         self.pos = pos
-        self.x_y = pos[0],pos[1]
+        self.x_y = pos[0], pos[1]
         self.depth = depth
         self.row = row
 
@@ -178,7 +238,6 @@ class Sprite(pg.sprite.Sprite):
         # self.depth = 0
 
     pos = property(_get_pos, _set_pos)
-
 
     def scale_to(self, w, h):
         center = self.rect.center
@@ -201,7 +260,7 @@ class Sprite(pg.sprite.Sprite):
         while True:
             # Change to next frame every two ticks
             for frame in self.frames:
-                self.image = frame[self.row] # this zero could be the direction.
+                self.image = frame[self.row]  # this zero could be the direction.
 
                 for i in range(self.ticks):
                     yield None
@@ -209,11 +268,13 @@ class Sprite(pg.sprite.Sprite):
     def update(self, *args):
         """Run the current animation."""
         for arg in args:
-            if isinstance(arg, Camera):
-                cam_pos = arg.state.topleft
-                self.rect.center = self.x_y[0] + cam_pos[0], self.x_y[1] + cam_pos[1]
+            # if isinstance(arg, Camera):
+            #     cam_pos = arg.state.center
+            #     self.rect.center = self.x_y[0] + cam_pos[0], self.x_y[1] + cam_pos[1]
+            if isinstance(arg, tuple):
+                self.rect.center = self.x_y[0] + arg[0], self.x_y[1] + arg[1]
 
-        if self.animation != None:
+        if self.animation is not None:
             self.animation.next()
 
 
@@ -224,11 +285,13 @@ class ParallaxSprite(Sprite):
 
     def update(self, *args):
         for arg in args:
-            if isinstance(arg, Camera):
-                cam_pos = arg.state.topleft
-                self.rect.center = self.x_y[0] + cam_pos[0] * self.offset, self.x_y[1] + cam_pos[1] * self.offset
+            # if isinstance(arg, Camera):
+            #     cam_pos = arg.state.center
+            #     self.rect.center = self.x_y[0] + cam_pos[0] * self.offset, self.x_y[1] + cam_pos[1] * self.offset
+            if isinstance(arg, tuple):
+                self.rect.center = self.x_y[0] + arg[0] * self.offset, self.x_y[1] + arg[1] * self.offset
 
-        if self.animation != None:
+        if self.animation is not None:
             self.animation.next()
 
 
@@ -241,7 +304,6 @@ class Block(pg.sprite.Sprite):
     def __init__(self, width, height, colour):
         # Call the parent class (Sprite) constructor
         pg.sprite.Sprite.__init__(self)
-
 
         # Create an image of the block, and fill it with a colour.
         # This could also be an image loaded from the disk.
