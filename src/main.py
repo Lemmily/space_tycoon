@@ -15,7 +15,7 @@ __author__ = 'Emily'
 import pygame as pg
 
 
-class Game():
+class Game:
     def __init__(self):
         self.screen = pg.display.get_surface()
         self.game_over = False
@@ -61,11 +61,9 @@ class Game():
         # thing2 = ParallaxSprite((800, 200), R.TILE_CACHE["data/two.png"], sprite_pos=[1,0])
         # self.sprites.add(thing2)
 
-
         self.ship = Ship(group=self.sprites)
 
         self.sprites.add(self.ship)
-
 
         # control
         self.pressed_key = None
@@ -100,7 +98,7 @@ class Game():
         while not self.game_over:
             dt = 1 / float(clock.tick(30))
 
-            ###temp
+            # ##temp
             self.screen.blit(self.background, (0, 0))
             ####
 
@@ -136,11 +134,9 @@ class Game():
             #     points = calculate_bezier(control_points[x:x+4])
             #     pg.draw.aalines(self.screen, (0, 0, 255), False, points )    #[(40, 100), (150, 566), (400, 100), (500, 300)]))
 
-
             # for sprite in self.sprites:
             #     points = (sprite.rect.topleft, sprite.rect.topright, sprite.rect.bottomright, sprite.rect.bottomleft)
             #     pg.draw.aalines(self.screen, (0, 0, 255), True, points)
-
 
             self.update_ui()
 

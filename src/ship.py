@@ -7,7 +7,7 @@ __author__ = 'Emily'
 
 class Ship(Sprite):
     def __init__(self, x=10, y=10, group=None):
-        Sprite.__init__(self, (x,y), R.TILE_CACHE["data/ship_1.png",31,45])
+        Sprite.__init__(self, (x,y), R.TILE_CACHE["data/ship_1.png", 31, 45])
 
         self.x = x
         self.y = y
@@ -46,7 +46,7 @@ class Ship(Sprite):
         return (self.x, self.y)
 
     def set_location(self, x, y):
-        self.x_y  = (x, y)
+        self.x_y = (x, y)
         self.x = x
         self.y = y
 

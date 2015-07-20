@@ -42,17 +42,18 @@
         <time>1.0</time>
         <byproduct type="slag" amount="0.1" chance="0.1"/>
     </processed>
-    <processed keyName="copperwire" name="copper wire">
+
+    <manufactured keyName="copperwire" name="copper wire">
         <location>furnace</location>
         <need type="copper plate" amount="2"/>
         <output>2.0</output>
         <time>0.5</time>
-    </processed>
-    <processed keyName="circuitboard" name="circuit board">
+    </manufactured>
+    <manufactured keyName="circuitboard" name="circuit board">
         <location>furnace</location>
         <need type="copper wire" amount="3"/>
         <need type="iron bar" amount="1"/>
         <output>1.0</output>
         <time>5.5</time>
-    </processed>
+    </manufactured>
 </data>
