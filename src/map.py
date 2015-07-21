@@ -123,7 +123,7 @@ class NotableObject(Sprite):
         midpoint = (max(obj.x, other_object.x) - abs(obj.x - other_object.x) / 3,
                     max(obj.y, other_object.y) - abs(obj.y - other_object.y) / 3)
         self.connections[obj.name + other_object.name] = (
-        (obj.x, obj.y), midpoint, (other_object.x, other_object.y))
+            (obj.x, obj.y), midpoint, (other_object.x, other_object.y))
         return True
 
     def make_graph(self):
@@ -282,7 +282,8 @@ class SolarSystem(NotableObject):
                 # connection = "city" + str(num)
                 other_poi = rand.choice(self.objects)
                 # other_city = self.cities_dict[connection]
-                if other_poi != self.star and other_poi.name != poi.name and not (poi.name + other_poi.name in self.connections or other_poi.name + poi.name in self.connections):
+                if other_poi != self.star and other_poi.name != poi.name and not (
+                            poi.name + other_poi.name in self.connections or other_poi.name + poi.name in self.connections):
                     connected = self.add_connection(poi, other_poi)
                 else:
                     break
@@ -341,17 +342,22 @@ class Sector:
             obj = pair[0]
             other_object = pair[1]
 
-            x_dev = -abs(obj[0] - other_object[
-                0])  # / coef + abs(object[0] - other_object[0]) * coef #deviation in the x for midpoint
+            x_dev = -abs(obj[0] - other_object[0])
+            # / coef + abs(object[0] - other_object[0]) * coef #deviation in the x for midpoint
             y_dev = abs(obj[1] - other_object[1])  # same for y
             # y_dev = -abs(object[1] - other_object[1]) / coef + abs(object[1] - other_object[1]) * coef #same for y
             # y_dev = rand.randint(-abs(object[1] - other_object[1]), abs(object[1] - other_object[1])) #same for y
 
+            x_dev = max(other_object[0], obj[0]) - min(other_object[0], obj[0])
+            y_dev = max(other_object[1], obj[1]) - min(other_object[1], obj[1])
+
             # adds in a deviation to make a pretty curve for line drawings
             midpoint = (max(obj[0], other_object[0]) - x_dev, max(obj[1], other_object[1]) - y_dev)
+            midpoint = (x_dev, y_dev)
 
             new_connections.append(((obj[0] + pos[0], obj[1] + pos[1]),
                                     (midpoint[0] + pos[0], midpoint[1] + pos[1]),
+                                    # (midpoint[0] , midpoint[1] ),
                                     (other_object[0] + pos[0], other_object[1] + pos[1])))
 
         return new_connections

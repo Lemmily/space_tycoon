@@ -41,14 +41,6 @@ class Resource:
     def __repr__(self):
         return self.name
 
-    def produce_byproducts(self):
-        if self.byproducts is not None:
-            byproducts = []
-            for resource in self.byproducts:
-                pass
-
-            return byproducts
-
 
 class Building:
     def __init__(self, resource=None, depot=None, rate=0.5, type=None):
@@ -73,15 +65,17 @@ class Building:
             self.type = type
         else:
             self.type = self.__class__.__name__.lower()
+
+        self.input_storage = {}
         self.storage = {}
         if self.resource.needs is not None:
-            self.storage = {res.name: 0 for res in
+            self.input_storage = {res.name: 0.0 for res in
                             self.resource.needs.keys()}  # setup storage for incoming resources.
 
-        self.storage[resource.name] = 0
+        self.storage[resource.name] = 0.0
         if resource.byproducts is not None:
             for item in resource.byproducts:
-                self.storage[item.name] = 0
+                self.storage[item.name] = 0.0
 
         # register with the depot
         self.depot.register(self)
@@ -92,12 +86,14 @@ class Building:
     def pickup_all(self):
         returnables = self.storage.copy()
         for key in self.storage.keys():
-            self.storage[key] = 0
+            left_over = returnables[key] % 1
+            returnables[key] -= left_over
+            self.storage[key] = left_over
         return returnables
 
     def receive(self, resources):
         for resource in resources.keys():
-            self.storage[resource] += resources[resource]
+            self.input_storage[resource] += resources[resource]
 
     def make_requests(self):
         """
@@ -106,26 +102,38 @@ class Building:
         """
         resources = []
         for resource in self.resource.needs.keys():
-            if self.storage[resource.name] < 5:  # TODO: make the number changeable.
+            if self.input_storage[resource.name] < 5:  # TODO: make the number changeable.
                 resources.append(resource)
 
         self.depot.request(self, resources)
 
     def all_resources_present(self):
         for resource in self.resource.needs.keys():
-            if self.storage[resource.name] < self.resource.needs[resource]:
+            if self.input_storage[resource.name] < self.resource.needs[resource]:
                 return False
 
         return True
 
     def produce(self, dt):
+        """
+        produces the output, also does byproducts.
+        :param dt:
+        :return:
+        """
         self.units += self.rate * dt
         if self.units >= self.resource.time:
             for resource in self.resource.needs.keys():
-                self.storage[resource.name] -= self.resource.needs[resource]  # st instead of int
+                self.input_storage[resource.name] -= self.resource.needs[resource]  # st instead of int
 
             self.storage[self.resource.name] += self.resource.output
             self.units = 0.0
+            self.produce_byproducts()
+
+    def produce_byproducts(self):
+        if self.resource.byproducts is not None:
+            for resource in self.resource.byproducts.keys():
+                if rand.randint(1, 100) < self.resource.byproducts[resource][1] * 100:
+                    self.storage[resource.name] += self.resource.byproducts[resource][0]
 
 
 class Mine(Building):
@@ -133,15 +141,16 @@ class Mine(Building):
         Building.__init__(self, resource, depot, rate, type)
 
     def update(self, dt):
-        # work out how much resource produced.
-        # TODO: will need to know how much resource is left at the source.
-        # make some resource
+        if self.all_resources_present():
+            # work out how much resource produced.
+            # TODO: will need to know how much resource is left at the source.
+            # make some resource
 
-        self.produce(dt)
-        # print self.units, "units of ", self.resource.name, " and ", self.storage[self.resource.name], " units stored"
-        # once resource is multiple of x forward to depot? or depot periodically collects from storage.
-
-        # pass
+            self.produce(dt)
+            # print self.units, "units of ", self.resource.name, " and ", self.storage[self.resource.name], " units stored"
+            # once resource is multiple of x forward to depot? or depot periodically collects from storage.
+        else:
+            self.make_requests()
 
 
 class Furnace(Building):
@@ -200,17 +209,22 @@ class Depot:
         return self.name
 
     def update(self, dt):
+        # collect from all registered buildings.
+        # TODO: tell a building to send convoy of goods - which then takes some time.
         for building in self.buildings:
             resources = building.pickup_all()
             for key in resources.keys():
-                self.storage[key] += resources[key]
+                if key in self.storage:
+                    self.storage[key] += resources[key]
+                else:
+                    self.storage[key] = resources[key]
         self.fulfil_requests()
         print str(self) + ": ", self.storage
 
     def register(self, building):
         if building not in self.buildings:
             self.buildings.add(building)
-            for key in building.storage.keys():
+            for key in building.storage.keys() and building.input_storage.keys():
                 if key not in self.storage:
                     self.storage[key] = 0.0
 
@@ -411,7 +425,7 @@ def construct_resources_tables():
     tree = ET.parse('data/resources.xml')
     root = tree.getroot()
 
-    # raw_resources_t = [] # dont need this because dont need to make any connections
+    # raw_resources_t = [] # don't need this because don't need to make any connections
     t_processed_resources = []
     t_manufactured_resources = []
 
@@ -429,7 +443,6 @@ def construct_resources_tables():
         resource = Resource(name, location, output=output, time=time, type=type)
         raw_resources.append(resource)
         resource_dict[name] = resource
-
 
     # Now do the processed ones, these take a bit more work.
     for res in root.findall("processed"):
@@ -486,7 +499,6 @@ def construct_resources_tables():
         resource = Resource(name, location, output=output, time=time, type=type)
         t_manufactured_resources.append((resource, needs, byproducts))
         resource_dict[name] = resource
-
 
     # Hook up the resource objects to the needs of processed resources.
     for entry in t_processed_resources:

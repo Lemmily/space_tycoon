@@ -7,7 +7,7 @@ import pygame.gfxdraw as gfxdraw
 
 from src import R
 from src.map import Galaxy
-from src.render import Sprite, SortedUpdates, TileCache, Camera, simple_camera_two
+from src.render import Sprite, SortedUpdates, TileCache, Camera, simple_camera_two, simple_camera
 from src.ship import Ship
 
 __author__ = 'Emily'
@@ -51,8 +51,8 @@ class Game:
         # self.camera.state.center = self.layer.dimensions.center
 
         # #test sprites.
-        thing3 = Sprite((200, 200), R.TILE_CACHE["data/planet_1.png"], scaling=2, ticks=8, depth=2)
-        thing4 = Sprite((500, 350), R.TILE_CACHE["data/planet_1.png"], scaling=2, ticks=8, depth=2, row=1)
+        # thing3 = Sprite((200, 200), R.TILE_CACHE["data/planet_1.png"], scaling=2, ticks=8, depth=2)
+        # thing4 = Sprite((500, 350), R.TILE_CACHE["data/planet_1.png"], scaling=2, ticks=8, depth=2, row=1)
         # thing = Sprite((100, 100), R.TILE_CACHE["data/planet_1.png"], scaling=3, ticks=4)
         # thing2 = ParallaxSprite((100, 100), R.TILE_CACHE["data/two.png"], sprite_pos=[1,0])
         # self.sprites.add( thing2, thing3, thing4)  # , self.world)
@@ -86,7 +86,7 @@ class Game:
             self.sprites.clear(self.screen, self.background)
             self.sprites.update(pos, dt)
 
-        self.sprites.update(pos, dt)
+        # self.sprites.update(pos, dt)
         self.ui_overlay.update(pos, dt)
         return dirties
 

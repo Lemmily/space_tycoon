@@ -107,7 +107,7 @@ def simple_camera(camera, target_rect):
 
 
 def simple_camera_two(camera, target_rect):
-    ##borrowed function - cannot remember where - stack overflow answer i think???
+    # #borrowed function - cannot remember where - stack overflow answer i think???
     # tracks target_rect
     l, t, _, _ = target_rect  # l = left,  t = top
     _, _, w, h = camera.state  # w = width, h = height

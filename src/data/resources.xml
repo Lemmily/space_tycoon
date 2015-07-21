@@ -42,18 +42,30 @@
         <time>1.0</time>
         <byproduct type="slag" amount="0.1" chance="0.1"/>
     </processed>
+    <processed keyName="stonebrick" name="stone brick">
+        <location name="kiln">furnace</location>
+        <need type="stone" amount="2.0"/>
+        <output>1.0</output>
+        <time>3.5</time>
+    </processed>
 
     <manufactured keyName="copperwire" name="copper wire">
-        <location>furnace</location>
+        <location>factory</location>
         <need type="copper plate" amount="2"/>
         <output>2.0</output>
         <time>0.5</time>
     </manufactured>
     <manufactured keyName="circuitboard" name="circuit board">
-        <location>furnace</location>
+        <location>factory</location>
         <need type="copper wire" amount="3"/>
         <need type="iron bar" amount="1"/>
         <output>1.0</output>
         <time>5.5</time>
+    </manufactured>
+    <manufactured keyName="wall" name="wall">
+        <location>factory</location>
+        <need type="stone brick" amount="5"/>
+        <output>1.0</output>
+        <time>0.5</time>
     </manufactured>
 </data>
