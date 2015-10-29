@@ -1,3 +1,4 @@
+import pygame as pg
 from pygame.sprite import RenderUpdates
 
 from pygame.constants import MOUSEMOTION, MOUSEBUTTONDOWN, MOUSEBUTTONUP
@@ -11,8 +12,6 @@ from src.render import Sprite, SortedUpdates, TileCache, Camera, simple_camera_t
 from src.ship import Ship
 
 __author__ = 'Emily'
-
-import pygame as pg
 
 
 class Game:
@@ -104,14 +103,16 @@ class Game:
 
             self.controls()
 
-            # rect = Rect(self.layer.dimensions[0] + self.camera.state[0], self.layer.dimensions[1] + self.camera.state[1],
-            #                     self.layer.dimensions[2], self.layer.dimensions[3])
+            # rect = Rect(self.layer.dimensions[0] + self.camera.state[0],
+            #                           self.layer.dimensions[1] + self.camera.state[1],
+            #                           self.layer.dimensions[2], self.layer.dimensions[3])
             # pg.draw.rect(self.screen, (60,60,30,20), rect)
 
             pg.draw.rect(self.screen, (30, 30, 30, 50),
                          Rect(self.camera.state.centerx, self.camera.state.centery, 48, 48))
 
-            pos = self.camera.state.centerx - self.layer.dimensions.w / 2, self.camera.state.centery - self.layer.dimensions.h / 2
+            pos = (self.camera.state.centerx - self.layer.dimensions.w / 2,
+                   self.camera.state.centery - self.layer.dimensions.h / 2)
             dirties = self.render(pos, dt)
 
             # self.sprites.clear(self.screen, self.background)
@@ -132,7 +133,8 @@ class Game:
             # control_points = [Vec2d(100,100), Vec2d(150,500), Vec2d(450, 500), Vec2d(500,150)]
             # for x in range(0,len(control_points)-1,3):
             #     points = calculate_bezier(control_points[x:x+4])
-            #     pg.draw.aalines(self.screen, (0, 0, 255), False, points )    #[(40, 100), (150, 566), (400, 100), (500, 300)]))
+            #     pg.draw.aalines(self.screen, (0, 0, 255), False, points )
+            # #[(40, 100), (150, 566), (400, 100), (500, 300)]))
 
             # for sprite in self.sprites:
             #     points = (sprite.rect.topleft, sprite.rect.topright, sprite.rect.bottomright, sprite.rect.bottomleft)
@@ -206,7 +208,8 @@ class Game:
                     if self.selector is not None:
                         # self.selected.rect.center = self.picked.sprite.rect.center
                         self.selector.x_y = (self.selected.x_y[0], self.selected.x_y[1])
-                        # .center = (self.picked.sprite.x_y[0] + self.camera.state.topleft[0], self.picked.sprite.x_y[1] + self.camera.state.topleft[1])
+                        # .center = (self.picked.sprite.x_y[0] + self.camera.state.topleft[0],
+                        # self.picked.sprite.x_y[1] + self.camera.state.topleft[1])
                 else:
                     for sprite in self.sprites.sprites():
                         if sprite.rect.collidepoint((x, y)):
@@ -248,7 +251,7 @@ class Game:
                     self.mouse_clicked(event.pos, event.button, pos)
 
             elif event.type == MOUSEMOTION and self.drag:  # drag the map
-                if event.rel <> (0, 0):
+                if event.rel != (0, 0):
                     (dmx, dmy) = event.rel
                     # dy = 360.0 * dmx / (256.0 * (2 ** self.actual_zoom))
                     # dx = 2.0 * math.degrees(math.atan(math.sinh(math.pi))) * dmy / (256.0 * (2 ** self.actual_zoom))
@@ -264,7 +267,8 @@ class Game:
 
     def switch_zoom(self, zoom, layer):
         self.ui_overlay.clear(self.screen, self.background)
-        self.camera.state.center = self.layer.dimensions.center  # self.camera.camera_func(self.camera, layer.dimensions).center
+        # self.camera.camera_func(self.camera, layer.dimensions).center
+        self.camera.state.center = self.layer.dimensions.center
         self.zoom = zoom
 
         if self.selector is not None:

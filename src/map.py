@@ -19,7 +19,6 @@ rand = random.Random()
 #         self.y = y
 #         self.connections = {}
 
-
 class ObjectOfInterest(Sprite):
     def __init__(self, name, x, y, frames=None, sprite_pos=None, scaling=2, ticks=2, depth=1, row=0):
         if frames is None:
@@ -35,7 +34,7 @@ class ObjectOfInterest(Sprite):
 
     @property
     def location(self):
-        return (self.x, self.y)
+        return self.x, self.y
 
 
 class Star(ObjectOfInterest):
@@ -258,7 +257,8 @@ class SolarSystem(NotableObject):
     # def add_connection(self, object, other_object):
     #     object.connections[other_object.name] = ((object.x, object.y), (other_object.x, other_object.y))
     #
-    #     x_dev = rand.randint(-abs(object.x - other_object.x), abs(object.x - other_object.x)) #deviation in the x for midpoint
+    # deviation in the x for midpoint
+    #     x_dev = rand.randint(-abs(object.x - other_object.x), abs(object.x - other_object.x))
     #     y_dev = rand.randint(-abs(object.y - other_object.y), abs(object.y - other_object.y)) #same for y
     #     midpoint = (max(object.x, other_object.x) - x_dev, max(object.y, other_object.y) - y_dev)
     #
@@ -283,7 +283,7 @@ class SolarSystem(NotableObject):
                 other_poi = rand.choice(self.objects)
                 # other_city = self.cities_dict[connection]
                 if other_poi != self.star and other_poi.name != poi.name and not (
-                            poi.name + other_poi.name in self.connections or other_poi.name + poi.name in self.connections):
+                                    poi.name + other_poi.name in self.connections or other_poi.name + poi.name in self.connections):
                     connected = self.add_connection(poi, other_poi)
                 else:
                     break

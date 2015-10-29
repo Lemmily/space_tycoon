@@ -36,7 +36,7 @@ class Camera:
             elif self.state.right < self.state.w / 2 + layer.w / 2:
                 self.state.right = self.state.w / 2 + layer.w / 2
 
-        ##if the map is taller than the screen
+        # if the map is taller than the screen
         if layer.h > self.state.h:
             if self.state.top > layer.h + self.state.h / 2:
                 self.state.top = layer.h + self.state.h / 2
@@ -178,7 +178,7 @@ class SortedUpdatesCamera(RenderUpdates):
 
 
 class Sprite(pg.sprite.Sprite):
-    def __init__(self, pos=(0, 0), frames=None, sprite_pos=None, scaling=2, tile_size=R.TILE_SIZE, ticks=2, depth=1,
+    def __init__(self, pos=(0, 0), frames=None, sprite_pos=None, scaling=2, ticks=2, depth=1,
                  row=0):
         pg.sprite.Sprite.__init__(self)
 
