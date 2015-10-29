@@ -1,3 +1,4 @@
+import pygame as pg
 from pygame.sprite import RenderUpdates
 
 from pygame.constants import MOUSEMOTION, MOUSEBUTTONDOWN, MOUSEBUTTONUP
@@ -11,8 +12,6 @@ from src.render import Sprite, SortedUpdates, TileCache, Camera, simple_camera_t
 from src.ship import Ship
 
 __author__ = 'Emily'
-
-import pygame as pg
 
 
 class Game:
@@ -104,14 +103,16 @@ class Game:
 
             self.controls()
 
-            # rect = Rect(self.layer.dimensions[0] + self.camera.state[0], self.layer.dimensions[1] + self.camera.state[1],
-            #                     self.layer.dimensions[2], self.layer.dimensions[3])
+            # rect = Rect(self.layer.dimensions[0] + self.camera.state[0],
+            #                           self.layer.dimensions[1] + self.camera.state[1],
+            #                           self.layer.dimensions[2], self.layer.dimensions[3])
             # pg.draw.rect(self.screen, (60,60,30,20), rect)
 
             pg.draw.rect(self.screen, (30, 30, 30, 50),
                          Rect(self.camera.state.centerx, self.camera.state.centery, 48, 48))
 
-            pos = self.camera.state.centerx - self.layer.dimensions.w / 2, self.camera.state.centery - self.layer.dimensions.h / 2
+            pos = (self.camera.state.centerx - self.layer.dimensions.w / 2,
+                   self.camera.state.centery - self.layer.dimensions.h / 2)
             dirties = self.render(pos, dt)
 
             # self.sprites.clear(self.screen, self.background)
@@ -248,7 +249,7 @@ class Game:
                     self.mouse_clicked(event.pos, event.button, pos)
 
             elif event.type == MOUSEMOTION and self.drag:  # drag the map
-                if event.rel <> (0, 0):
+                if event.rel != (0, 0):
                     (dmx, dmy) = event.rel
                     # dy = 360.0 * dmx / (256.0 * (2 ** self.actual_zoom))
                     # dx = 2.0 * math.degrees(math.atan(math.sinh(math.pi))) * dmy / (256.0 * (2 ** self.actual_zoom))

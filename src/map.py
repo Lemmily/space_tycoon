@@ -19,7 +19,6 @@ rand = random.Random()
 #         self.y = y
 #         self.connections = {}
 
-
 class ObjectOfInterest(Sprite):
     def __init__(self, name, x, y, frames=None, sprite_pos=None, scaling=2, ticks=2, depth=1, row=0):
         if frames is None:
@@ -283,7 +282,7 @@ class SolarSystem(NotableObject):
                 other_poi = rand.choice(self.objects)
                 # other_city = self.cities_dict[connection]
                 if other_poi != self.star and other_poi.name != poi.name and not (
-                            poi.name + other_poi.name in self.connections or other_poi.name + poi.name in self.connections):
+                                    poi.name + other_poi.name in self.connections or other_poi.name + poi.name in self.connections):
                     connected = self.add_connection(poi, other_poi)
                 else:
                     break
