@@ -70,7 +70,7 @@ class Building:
         self.storage = {}
         if self.resource.needs is not None:
             self.input_storage = {res.name: 0.0 for res in
-                            self.resource.needs.keys()}  # setup storage for incoming resources.
+                                  self.resource.needs.keys()}  # setup storage for incoming resources.
 
         self.storage[resource.name] = 0.0
         if resource.byproducts is not None:
@@ -79,6 +79,9 @@ class Building:
 
         # register with the depot
         self.depot.register(self)
+
+    def __str__(self):
+        return self.__class__.__name__ + " of type " + self.type
 
     def update(self, dt):
         pass
@@ -155,7 +158,7 @@ class Mine(Building):
 
 class Furnace(Building):
     def __init__(self, resource, depot, rate=0.5):
-        Building.__init__(self, resource, depot, rate)
+        Building.__init__(self, resource, depot, rate, resource.type)
 
     def update(self, dt):
         if self.all_resources_present():
@@ -190,8 +193,7 @@ class Factory(Building):
 
 
 class Depot:
-
-    def __init__(self, num=0):
+    def __init__(self, num=0, owner="player"):
         self.name = "Depot " + str(num)
         self.connected_depots = []
         self.storage = {}
@@ -199,6 +201,7 @@ class Depot:
         self.requests = {}
         self.requests_by_type = {}
         self.producers = {}
+        self.owner = owner
 
         for raw in raw_resources:
             self.storage[raw.name] = 0.0
@@ -234,6 +237,7 @@ class Depot:
                 self.producers[building.resource.name] += 1
 
     def request(self, building, specifics=None):
+        # TODO: add in numerical requests.
         if building not in self.requests:
             if specifics is None:
                 self.requests[building] = building.needs
@@ -326,31 +330,33 @@ class IndustryManager:
             Factory(resource_dict["circuit board"], depot, rate=0.25 + float(rand.randint(-10, 10) / 100.0)))
 
         self.depots = [self.create_depot_with_buildings()]
-
         depot.make_connection(self.depots[0])
-
         self.depots.append(depot)
 
     def create_depot_with_buildings(self):
         depot = Depot()
-        for i in range(7):
+        for i in range(10):
             rate = 0.75 + float(rand.randint(-10, 10) / 100.0)
 
-            if i < 3:
+            if i < 4:
                 resource = resource_dict["fuel"]
-            elif i < 5:
+            elif i < 6:
                 resource = resource_dict["copper ore"]
-            else:
+            elif i < 9:
                 resource = resource_dict["iron ore"]
+            else:
+                resource = resource_dict["stone"]
 
             building = Mine(resource, depot, rate=rate)
             self.add_building(building)
 
-        for i in range(4):
-            if i < 2:
+        for i in range(7):
+            if i < 3:
                 resource = resource_dict["iron bar"]
-            else:
+            elif i < 6:
                 resource = resource_dict["copper plate"]
+            else:
+                resource = resource_dict["stone brick"]
 
             rate = 0.5 + float(rand.randint(-10, 10) / 100.0)
             building = Furnace(resource, depot, rate=rate)
@@ -362,7 +368,7 @@ class IndustryManager:
                 resource = resource_dict["copper wire"]
             else:
                 resource = resource_dict["circuit board"]
-            building = Furnace(resource, depot, rate=rate)
+            building = Factory(resource, depot, rate=rate)
             self.add_building(building)
 
         return depot
@@ -384,7 +390,19 @@ class IndustryManager:
 
     def add_building(self, building):
         self.buildings.append(building)
-        self.building_by_type[building.type].append(building)
+        self.building_by_type[building.__class__.__name__.lower()].append(building)
+
+
+class EconomyManager:
+    def __init__(self, products):
+        # Manages economic viability. Needs to know which products are required for the things it's trying to produce.
+        self.resources = {}
+        for resource in products:
+            for need in resource.needs.keys():
+                if need in self.resources.keys():
+                    self.resources[need] += resource.needs[need]
+                else:
+                    self.resources[need] = resource.needs[need]
 
 
 def main():
@@ -397,10 +415,12 @@ def main():
     # pg.display.flip()
 
     industry_manager = IndustryManager()
+    alien_industry_manager = IndustryManager()
     while not game_over:
         dt = 1 / float(clock.tick(30))
 
         industry_manager.update(dt)
+        alien_industry_manager.update(dt)
 
         handle_events()
 

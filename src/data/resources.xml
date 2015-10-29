@@ -28,8 +28,8 @@
 
     <processed keyName="ironbar" name="iron bar">
         <location>furnace</location>
-        <need type="iron ore" amount="1"/>
-        <need type="fuel" amount="1"/>
+        <need type="iron ore" amount="1.0"/>
+        <need type="fuel" amount="1.0"/>
         <output>1.0</output>
         <time>1.0</time>
         <byproduct type="slag" amount="0.1" chance="0.1"/>
