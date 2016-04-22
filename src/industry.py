@@ -220,6 +220,19 @@ class Factory(Building):
             #         self.units = 0.0
 
 
+class Job:
+    """
+        A temporary and idealistic view of how the jobs might work. JObs could be things like "produce goods" or "Repair wall"
+        or "Deliver goods" or "pickup goods" or "Construct building".
+    """
+    def __init__(self):
+        # Some kind of job thingy.
+        pass
+
+    def update(self, dt):
+        # update the job - do your thinnngg
+        pass
+
 class Depot:
     def __init__(self, num=0, owner="player"):
         self.name = "Depot " + str(num)
@@ -341,7 +354,7 @@ class IndustryManager:
     temporary testing for industry stuffs
 
 
-    this will eventually be part of the planets/locations. it will run the industries.
+    this should eventually be part of the planets/locations. it will run the industries.
 
     """
 
@@ -416,11 +429,10 @@ class IndustryManager:
             building.update(dt)
 
         self.ticks += 1
-        if self.ticks > 30:
+        if self.ticks % 30 == 0:
             # only do fetches from buildings every 30 ticks or so
             for depot in self.depots:
                 depot.update(dt)
-            self.ticks -= 30
 
     def add_building(self, building):
         self.buildings.append(building)
