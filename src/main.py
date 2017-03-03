@@ -255,7 +255,7 @@ class Game:
                     (dmx, dmy) = event.rel
                     # dy = 360.0 * dmx / (256.0 * (2 ** self.actual_zoom))
                     # dx = 2.0 * math.degrees(math.atan(math.sinh(math.pi))) * dmy / (256.0 * (2 ** self.actual_zoom))
-                    # print "drag (%d,%d) > %.4f,%.4f" % (dmx,dmy,dx,dy)
+                    print "drag (%d,%d) > %.4f,%.4f" % (dmx,dmy,dx,dy)
                     self.camera.state.center = (self.camera.state.center[0] + dmx, self.camera.state.center[1] + dmy)
                     self.camera.bound(self.layer)
                     # self.camera.state.center = (self.cam_pos.center[0] + dmx, self.cam_pos.center[1] + dmy)

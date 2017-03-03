@@ -1,10 +1,11 @@
 from random import Random
 from sets import Set
 
-__author__ = 'Emily'
-
 import pygame as pg
 import xml.etree.ElementTree as ET
+
+__author__ = 'Emily'
+
 
 rand = Random()
 
@@ -56,13 +57,15 @@ class Request:
 
 
 class Building:
-    def __init__(self, resource=None, depot=None, rate=0.5, variety=None):
+    def __init__(self, resource=None, depot=None, rate=0.5, variety=None, num=0):
         """
         :param resource:
         :param depot:
         :param rate: production rate for the building.
+        :param num:
         :return:
         """
+        self.num = num
         self.depot = depot  # the station where this resource is sent to.
         self.resource = resource  # resource produced
 
@@ -81,20 +84,13 @@ class Building:
 
         self.input_storage = {}
         self.storage = {}
-        if self.resource.needs is not None:
-            self.input_storage = {res.name: 0.0 for res in
-                                  self.resource.needs.keys()}  # setup storage for incoming resources.
-
-        self.storage[resource.name] = 0.0
-        if resource.byproducts is not None:
-            for item in resource.byproducts:
-                self.storage[item.name] = 0.0
+        self.assign_resource(resource)
 
         # register with the depot
         self.depot.register(self)
 
     def __str__(self):
-        return self.__class__.__name__, "of type", self.variety, "producing", self.resource
+        return self.__class__.__name__, "of type", self.variety, " ", self.num, "producing", self.resource
 
     def update(self, dt):
         pass
@@ -108,9 +104,20 @@ class Building:
                 self.storage[key] = left_over
         return returnables
 
+    def assign_resource(self, resource):
+        self.resource = resource  # resource produced
+        if self.resource.needs is not None:
+            self.input_storage = {res.name: 0.0 for res in
+                                  self.resource.needs.keys()}  # setup storage for incoming resources.
+
+        self.storage[resource.name] = 0.0
+        if resource.byproducts is not None:
+            for item in resource.byproducts:
+                self.storage[item.name] = 0.0
+
     def receive(self, resources):
         for resource in resources.keys():
-            print self.depot.owner, self.variety, "received", resource, resources[resource]
+            print self.depot.owner, self.variety, self.num, "received", resource, resources[resource]
             self.input_storage[resource] += resources[resource]
 
     def make_requests(self):
@@ -156,9 +163,10 @@ class Building:
 
 class Mine(Building):
     """ Raw resource gathering."""
-    def __init__(self, resource, depot, rate=0.5, variety="mine"):
+    def __init__(self, resource, depot, resource_source, rate=0.5, variety="mine"):
         # type flavour, changes the name of the building; mine class type could be quarry, mine, pump jack. sift station
         Building.__init__(self, resource, depot, rate, variety)
+        self.source = resource_source
 
     def update(self, dt):
         if self.all_resources_present():
@@ -180,12 +188,14 @@ class Mine(Building):
 
     def check_source(self):
         # TODO:do a check to make sure there's still resources to mine/farm/pump/etc...
-        return True
+        if self.source > self.resource.output:
+            return True
+        return False
 
 
 class Furnace(Building):
-    def __init__(self, resource, depot, rate=0.5):
-        Building.__init__(self, resource, depot, rate, resource.type)
+    def __init__(self, resource, depot, rate=0.5, num=0):
+        Building.__init__(self, resource, depot, rate, resource.type, num)
 
     def update(self, dt):
         if self.all_resources_present():
@@ -198,8 +208,8 @@ class Furnace(Building):
 
 
 class Factory(Building):
-    def __init__(self, resource, depot, rate=0.25):
-        Building.__init__(self, resource, depot, rate)
+    def __init__(self, resource, depot, rate=0.25, num=0):
+        Building.__init__(self, resource, depot, rate, None, num)
 
     def update(self, dt):
         if self.all_resources_present():
@@ -222,7 +232,7 @@ class Factory(Building):
 
 class Job:
     """
-        A temporary and idealistic view of how the jobs might work. JObs could be things like "produce goods" or "Repair wall"
+        A temporary and idealistic view of how the jobs might work. Jobs could be things like "produce goods" or "Repair wall"
         or "Deliver goods" or "pickup goods" or "Construct building".
     """
     def __init__(self):
@@ -232,6 +242,7 @@ class Job:
     def update(self, dt):
         # update the job - do your thinnngg
         pass
+
 
 class Depot:
     def __init__(self, num=0, owner="player"):
@@ -344,7 +355,7 @@ class Depot:
             print self, "connected to", depot
 
     def receive(self, resources):
-        print self, "received", resources
+        print str(self), "received", resources
         for resource in resources.keys():
             self.storage[resource] += resources[resource]
 
@@ -366,11 +377,11 @@ class IndustryManager:
         self.building_by_type = {"mine": [], "furnace": [], "factory": []}
         depot = Depot(1, owner)
         self.add_building(
-            Factory(resource_dict["circuit board"], depot, rate=0.25 + float(rand.randint(-10, 10) / 100.0)))
+            Factory(resource_dict["circuit board"], depot, rate=0.25 + float(rand.randint(-10, 10) / 100.0), num=0))
         self.add_building(
-            Factory(resource_dict["circuit board"], depot, rate=0.25 + float(rand.randint(-10, 10) / 100.0)))
+            Factory(resource_dict["circuit board"], depot, rate=0.25 + float(rand.randint(-10, 10) / 100.0), num=1))
         self.add_building(
-            Factory(resource_dict["circuit board"], depot, rate=0.25 + float(rand.randint(-10, 10) / 100.0)))
+            Factory(resource_dict["circuit board"], depot, rate=0.25 + float(rand.randint(-10, 10) / 100.0), num=2))
 
         self.depots = [self.create_depot_with_buildings(0, owner)]
         depot.make_connection(self.depots[0])
@@ -392,7 +403,7 @@ class IndustryManager:
             else:
                 resource = resource_dict["stone"]
 
-            building = Mine(resource, depot, rate=rate)
+            building = Mine(resource, depot, 5000, rate=rate)
             self.add_building(building)
 
         # Furnace based production
@@ -498,7 +509,11 @@ def handle_events():
         if event.type == pg.QUIT:
             game_over = True
 
-
+# ##
+# ##
+# ## static variables for a master list of resources.
+# ##
+# ##
 raw_resources = []
 processed_resources = []
 manufactured_resources = []

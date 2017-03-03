@@ -43,7 +43,7 @@ class Ship(Sprite):
         self.set_location(self.x + mX, self.y + mY)
 
     def get_location(self):
-        return (self.x, self.y)
+        return self.x, self.y
 
     def set_location(self, x, y):
         self.x_y = (x, y)

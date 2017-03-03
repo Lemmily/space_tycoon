@@ -5,9 +5,8 @@ from pygame.rect import Rect
 
 from src import R
 
-__author__ = 'Emily'
-
 import pygame as pg
+__author__ = 'Emily'
 
 
 class Camera:
